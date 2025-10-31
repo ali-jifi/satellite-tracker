@@ -1,4 +1,4 @@
-# Advanced 3D Satellite Tracker
+# 3D Satellite Tracker
 
 A real-time 3D satellite tracking application that displays satellites orbiting Earth using real data from Space-Track.org.
 

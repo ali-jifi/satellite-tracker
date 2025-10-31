@@ -14,17 +14,17 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/api\/spacetrack/, ''),
         configure: (proxy, options) => {
           proxy.on('proxyReq', (proxyReq, req, res) => {
-            // Add headers for Space-Track.org
+            //add headers for Space-Track.org
             proxyReq.setHeader('User-Agent', 'Mozilla/5.0');
 
-            // Forward cookies from the browser
+            //forward cookies from browser
             if (req.headers.cookie) {
               proxyReq.setHeader('Cookie', req.headers.cookie);
             }
           });
 
           proxy.on('proxyRes', (proxyRes, req, res) => {
-            // Forward Set-Cookie headers back to the browser
+            //forward set-cookie headers back to browser
             if (proxyRes.headers['set-cookie']) {
               res.setHeader('Set-Cookie', proxyRes.headers['set-cookie']);
             }

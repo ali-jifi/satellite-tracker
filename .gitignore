@@ -1,4 +1,4 @@
-# Logs
+#logs
 logs
 *.log
 npm-debug.log*
@@ -17,12 +17,12 @@ QUICKSTART.md
 SPACE_TRACK_SETUP.md
 AUTHENTICATION_FIX.md
 
-# Environment variables
+#environment variables
 .env
 .env.local
 .env.example
 
-# Editor directories and files
+#editor directories and files
 .vscode/*
 !.vscode/extensions.json
 .idea

@@ -1,4 +1,4 @@
-// Fetch TLEs from CelesTrak
+//fetch tles from CelesTrak
 export async function fetchTLEsFromCelesTrak(category = 'stations') {
   const url = `https://celestrak.org/NORAD/elements/gp.php?GROUP=${category}&FORMAT=tle`;
   
@@ -12,7 +12,7 @@ export async function fetchTLEsFromCelesTrak(category = 'stations') {
   }
 }
 
-// Parse TLE text into satellite objects
+//parse tle text into sat objects
 export function parseTLEText(tleText) {
   const lines = tleText.trim().split('\n');
   const satellites = [];
@@ -32,13 +32,13 @@ export function parseTLEText(tleText) {
   return satellites;
 }
 
-// Fetch from Space-Track.org (requires authentication)
+//fetch from Space-Track.org, requires auth
 export async function fetchTLEsFromSpaceTrack(username, password) {
   const loginUrl = 'https://www.space-track.org/ajaxauth/login';
   const queryUrl = 'https://www.space-track.org/basicspacedata/query/class/gp/EPOCH/>now-30/orderby/NORAD_CAT_ID/format/tle';
   
   try {
-    // Login
+    //login
     await fetch(loginUrl, {
       method: 'POST',
       credentials: 'include',
@@ -48,7 +48,7 @@ export async function fetchTLEsFromSpaceTrack(username, password) {
       body: `identity=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
     });
     
-    // Fetch TLEs
+    //fetch tles
     const response = await fetch(queryUrl, {
       credentials: 'include'
     });
