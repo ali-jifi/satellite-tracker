@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { TextureLoader } from 'three';
 import * as satellite from 'satellite.js';
 import spaceTrackService from '../services/spaceTrackService';
+import PerformanceMonitor from './PerformanceMonitor';
 
 //parse tle epoch from line 1 (format: YYDDd.dddddddd)
 const parseTLEEpoch = (tle1) => {
@@ -18,6 +19,14 @@ const parseTLEEpoch = (tle1) => {
   epoch.setDate(epoch.getDate() + dayOfYear - 1);
 
   return epoch;
+};
+
+//calc orbital period from mean motion (revs per day)
+const getOrbitalPeriod = (satrec) => {
+  //mean motion is in revs/day, convert to minutes/orbit
+  const meanMotion = satrec.no * (1440 / (2 * Math.PI)); //convert rad/min to rev/day
+  const orbitalPeriodMinutes = 1440 / meanMotion; //minutes per orbit
+  return orbitalPeriodMinutes;
 };
 
 //ground track calculation
@@ -278,7 +287,8 @@ const Earth = ({ observerLocation }) => {
   return (
     <group>
       {/*earth sphere - no rotation, adjust longitude instead*/}
-      <Sphere args={[6.371, 64, 64]}>
+      {/*optimized: 32x32 segments (1024 tris) vs 64x64 (4096 tris) = 75% reduction*/}
+      <Sphere args={[6.371, 32, 32]}>
         <meshStandardMaterial
           map={earthTexture}
           normalMap={earthBumpMap}
@@ -289,7 +299,7 @@ const Earth = ({ observerLocation }) => {
       </Sphere>
 
       {/*atmosphere*/}
-      <Sphere args={[6.5, 64, 64]}>
+      <Sphere args={[6.5, 32, 32]}>
         <meshBasicMaterial
           color="#4dabf7"
           transparent
@@ -446,6 +456,71 @@ const Satellite3D = ({ position, color, isSelected, name }) => {
   );
 };
 
+//visibility circle comp - shows area where sat can be seen from
+const VisibilityCircle3D = ({ satellitePosition }) => {
+  if (!satellitePosition || !satellitePosition.latitude || !satellitePosition.longitude || !satellitePosition.altitude) {
+    return null;
+  }
+
+  //calc horizon distance based on sat altitude
+  const earthRadius = 6.371; //matches earth sphere radius
+  const satAlt = satellitePosition.altitude / 1000; //convert to match units (thousands of km)
+
+  //min elevation angle (0 deg = horizon)
+  const minElevation = 0;
+  const minElevRad = minElevation * Math.PI / 180;
+
+  //calc max distance on earth where sat is visible at min elevation
+  const horizonAngle = Math.acos(earthRadius / (earthRadius + satAlt)) - minElevRad;
+  const horizonDistance = earthRadius * horizonAngle; //arc distance on earth surface
+
+  //create circle points around satellite ground position
+  const points = [];
+  const numPoints = 64; //circle resolution
+
+  for (let i = 0; i <= numPoints; i++) {
+    const angle = (i / numPoints) * 2 * Math.PI;
+
+    //calc point at horizon distance from satellite sub-point
+    const lat1 = satellitePosition.latitude * Math.PI / 180;
+    const lon1 = satellitePosition.longitude * Math.PI / 180;
+    const angularDist = horizonDistance / earthRadius;
+
+    const lat2 = Math.asin(
+      Math.sin(lat1) * Math.cos(angularDist) +
+      Math.cos(lat1) * Math.sin(angularDist) * Math.cos(angle)
+    );
+
+    const lon2 = lon1 + Math.atan2(
+      Math.sin(angle) * Math.sin(angularDist) * Math.cos(lat1),
+      Math.cos(angularDist) - Math.sin(lat1) * Math.sin(lat2)
+    );
+
+    const latitude = lat2 * 180 / Math.PI;
+    const longitude = lon2 * 180 / Math.PI;
+
+    //convert to 3d coords matching earth rendering
+    const latRad = latitude * Math.PI / 180;
+    const lonRad = (longitude + 90) * Math.PI / 180; //add 90 deg offset, texture alignment
+    const radius = 6.371 * 1.001; //slightly above surface
+
+    const x = radius * Math.cos(latRad) * Math.sin(lonRad);
+    const y = radius * Math.sin(latRad);
+    const z = radius * Math.cos(latRad) * Math.cos(lonRad);
+
+    points.push(new THREE.Vector3(x, y, z));
+  }
+
+  const lineGeometry = new THREE.BufferGeometry().setFromPoints(points);
+
+  return (
+    <line>
+      <primitive object={lineGeometry} attach="geometry" />
+      <lineBasicMaterial color="#00ff00" opacity={0.5} transparent linewidth={2} />
+    </line>
+  );
+};
+
 //ground track comp
 const GroundTrack3D = ({ groundTrack, color }) => {
   if (!groundTrack || groundTrack.length < 2) return null;
@@ -489,7 +564,7 @@ const GroundTrack3D = ({ groundTrack, color }) => {
 };
 
 //3d scene comp
-const Scene3D = ({ positions, satellites, selectedSatellite, observerLocation, groundTrack, getCategoryColor }) => {
+const Scene3D = ({ positions, satellites, selectedSatellite, observerLocation, groundTrack, getCategoryColor, showVisibilityCircle }) => {
   return (
     <>
       <ambientLight intensity={1.2} />
@@ -499,6 +574,13 @@ const Scene3D = ({ positions, satellites, selectedSatellite, observerLocation, g
       <Stars radius={300} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
 
       <Earth observerLocation={observerLocation} />
+
+      {/*visibility circle for selected sat*/}
+      {showVisibilityCircle && selectedSatellite && positions[selectedSatellite.id] && (
+        <VisibilityCircle3D
+          satellitePosition={positions[selectedSatellite.id]}
+        />
+      )}
 
       {/*ground track for selected sat*/}
       {selectedSatellite && groundTrack && groundTrack.length > 0 && (
@@ -552,6 +634,7 @@ const SatelliteTracker = () => {
   const [upcomingPasses, setUpcomingPasses] = useState([]);
   const [showGroundTrack, setShowGroundTrack] = useState(true);
   const [showVisibilityCircle, setShowVisibilityCircle] = useState(true);
+  const [groundTrackMode, setGroundTrackMode] = useState('fixed'); //fixed or full
   const [activeTab, setActiveTab] = useState('tracking'); //tracking, passes, visibility
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showAuthDialog, setShowAuthDialog] = useState(false);
@@ -561,6 +644,7 @@ const SatelliteTracker = () => {
   const [error, setError] = useState(null);
   const [dataSource, setDataSource] = useState('popular'); //popular, category, all
   const [selectedCategory, setSelectedCategory] = useState('starlink');
+  const [showPerformanceMonitor, setShowPerformanceMonitor] = useState(false);
   const workerRef = useRef(null);
   const mapRef = useRef(null);
   const animationRef = useRef(null);
@@ -719,6 +803,18 @@ const SatelliteTracker = () => {
     }
   }, [dataSource, selectedCategory]);
 
+  //keyboard shortcuts
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      if (e.key === 'p' || e.key === 'P') {
+        setShowPerformanceMonitor(prev => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, []);
+
   useEffect(() => {
     workerRef.current = new SatelliteWorker();
     
@@ -784,7 +880,15 @@ const SatelliteTracker = () => {
         }
 
         //calc path from current time (updates as sat moves)
-        const track = calculateGroundTrack(satrec, new Date(), 180, 2); //3 hour, 2 min steps
+        let durationMinutes;
+        if (groundTrackMode === 'full') {
+          //calc full orbital period
+          durationMinutes = getOrbitalPeriod(satrec);
+        } else {
+          //fixed 3 hour duration
+          durationMinutes = 180;
+        }
+        const track = calculateGroundTrack(satrec, new Date(), durationMinutes, 2);
 
         //chk tle age and warn if too old
         const tleEpoch = parseTLEEpoch(selectedSatellite.tle1);
@@ -844,7 +948,7 @@ const SatelliteTracker = () => {
     return () => {
       clearInterval(groundTrackInterval);
     };
-  }, [selectedSatellite, showGroundTrack]);
+  }, [selectedSatellite, showGroundTrack, groundTrackMode]);
 
   //cal visibility of selected sat
   useEffect(() => {
@@ -1055,9 +1159,9 @@ const SatelliteTracker = () => {
             <div className="bg-blue-900 border border-blue-600 text-blue-200 px-4 py-3 rounded mb-4 text-sm">
               <p className="font-semibold mb-1">Why do we need your location?</p>
               <ul className="list-disc list-inside space-y-1 text-xs">
-                <li>Calculate when satellites pass over YOUR location</li>
+                <li>Calculate when satellites pass over <strong>your</strong> location</li>
                 <li>Show elevation and azimuth angles for viewing</li>
-                <li>Display a red marker showing where YOU are on Earth</li>
+                <li>Display a red marker showing where you are on Earth</li>
               </ul>
             </div>
 
@@ -1534,6 +1638,7 @@ const SatelliteTracker = () => {
               observerLocation={observerLocation}
               groundTrack={showGroundTrack ? groundTrack : []}
               getCategoryColor={getCategoryColor}
+              showVisibilityCircle={showVisibilityCircle}
             />
           </Canvas>
 
@@ -1686,6 +1791,32 @@ const SatelliteTracker = () => {
                           />
                           Show Ground Track
                         </label>
+                        {showGroundTrack && (
+                          <div className="ml-6 space-y-1">
+                            <label className="flex items-center gap-2 text-xs">
+                              <input
+                                type="radio"
+                                name="groundTrackMode"
+                                value="fixed"
+                                checked={groundTrackMode === 'fixed'}
+                                onChange={(e) => setGroundTrackMode(e.target.value)}
+                                className="rounded-full"
+                              />
+                              fixed 3 hrs
+                            </label>
+                            <label className="flex items-center gap-2 text-xs">
+                              <input
+                                type="radio"
+                                name="groundTrackMode"
+                                value="full"
+                                checked={groundTrackMode === 'full'}
+                                onChange={(e) => setGroundTrackMode(e.target.value)}
+                                className="rounded-full"
+                              />
+                              full orbit
+                            </label>
+                          </div>
+                        )}
                         <label className="flex items-center gap-2 text-sm">
                           <input
                             type="checkbox"
@@ -1801,6 +1932,9 @@ const SatelliteTracker = () => {
           </div>
         </div>
       </div>
+
+      {/*perf monitor*/}
+      <PerformanceMonitor isVisible={showPerformanceMonitor} />
     </div>
   );
 };
