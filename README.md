@@ -143,14 +143,6 @@ This application uses the Space-Track.org API to fetch real TLE (Two-Line Elemen
 
 The application automatically manages API calls to stay within limits.
 
-## Building for Production
-
-```bash
-npm run build
-```
-
-The built files will be in the `dist` directory.
-
 ## Troubleshooting
 
 ### Authentication Issues
