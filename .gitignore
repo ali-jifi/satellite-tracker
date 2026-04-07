@@ -13,6 +13,8 @@ dist-ssr
 *.local
 
 .claude
+.planning
+
 QUICKSTART.md
 SPACE_TRACK_SETUP.md
 AUTHENTICATION_FIX.md
