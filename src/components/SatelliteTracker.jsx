@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, Satellite, Search, Settings, RefreshCw, Eye, Navigation, Clock, Target, Key } from 'lucide-react';
+import { MapPin, Satellite, Search, Settings, RefreshCw, Eye, Navigation, Clock, Target, Key, Menu, X, ChevronRight, Radio, Crosshair, Gauge, Layers } from 'lucide-react';
 import { Canvas, useLoader } from '@react-three/fiber';
 import { OrbitControls, Sphere, Stars } from '@react-three/drei';
 import * as THREE from 'three';
@@ -623,7 +623,6 @@ const SatelliteTracker = () => {
   const [positions, setPositions] = useState({});
   const [isTracking, setIsTracking] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [showSettings, setShowSettings] = useState(false);
   const [updateInterval, setUpdateInterval] = useState(1000);
   const [lastTleUpdate, setLastTleUpdate] = useState(new Date());
   const [observerLocation, setObserverLocation] = useState(null); //skip def location
@@ -646,7 +645,6 @@ const SatelliteTracker = () => {
   const [selectedCategory, setSelectedCategory] = useState('starlink');
   const [showPerformanceMonitor, setShowPerformanceMonitor] = useState(false);
   const workerRef = useRef(null);
-  const mapRef = useRef(null);
   const animationRef = useRef(null);
 
   //auth handler
@@ -1065,875 +1063,739 @@ const SatelliteTracker = () => {
     return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
   };
 
+  const [showDrawer, setShowDrawer] = useState(false);
+  const [showSettingsPanel, setShowSettingsPanel] = useState(false);
+
   return (
-    <div className="h-screen w-full bg-gray-900 text-white flex flex-col overflow-hidden">
-      {/*auth dialog*/}
-      {showAuthDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 border border-gray-700">
-            <div className="flex items-center gap-3 mb-4">
-              <Key className="text-blue-400" size={24} />
-              <h2 className="text-xl font-bold">Space-Track.org Login</h2>
+    <div className="h-screen w-full bg-black overflow-hidden relative" style={{ fontFamily: 'var(--font-mono)' }}>
+
+      {/* ═══ FULL-SCREEN 3D GLOBE ═══ */}
+      <div className="absolute inset-0">
+        <Canvas
+          camera={{ position: [15, 15, 15], fov: 60 }}
+          style={{ width: '100%', height: '100%' }}
+          gl={{ antialias: true, alpha: true }}
+        >
+          <Scene3D
+            positions={positions}
+            satellites={satellites}
+            selectedSatellite={selectedSatellite}
+            observerLocation={observerLocation}
+            groundTrack={showGroundTrack ? groundTrack : []}
+            getCategoryColor={getCategoryColor}
+            showVisibilityCircle={showVisibilityCircle}
+          />
+        </Canvas>
+      </div>
+
+      {/* ═══ TOP BAR ═══ */}
+      <div className="absolute top-0 left-0 right-0 z-30 pointer-events-none">
+        <div className="flex items-center justify-between px-5 py-4">
+          {/* Left: Menu + Logo */}
+          <div className="flex items-center gap-4 pointer-events-auto">
+            <button
+              onClick={() => setShowDrawer(!showDrawer)}
+              className="glass w-10 h-10 rounded-lg flex items-center justify-center hover:bg-white/5 transition-colors"
+            >
+              {showDrawer ? <X size={18} style={{ color: 'var(--accent)' }} /> : <Menu size={18} style={{ color: 'var(--text-secondary)' }} />}
+            </button>
+
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <Satellite size={22} style={{ color: 'var(--accent)' }} />
+                <div className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full pulse-glow" style={{ background: 'var(--accent)' }} />
+              </div>
+              <div>
+                <h1 className="text-sm font-semibold tracking-wide" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)', letterSpacing: '0.05em' }}>
+                  SATELLITE TRACKER
+                </h1>
+                <p className="text-[10px] tracking-widest uppercase" style={{ color: 'var(--text-tertiary)' }}>
+                  Real-time orbital tracking
+                </p>
+              </div>
             </div>
+          </div>
 
-            <p className="text-sm text-gray-400 mb-4">
-              To access real satellite data, please sign in with your Space-Track.org credentials.
-              Don't have an account? <a href="https://www.space-track.org/auth/createAccount" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Create one for free</a>
-            </p>
-
-            {error && (
-              <div className="bg-red-900 border border-red-600 text-red-200 px-4 py-2 rounded mb-4 text-sm">
-                {error}
+          {/* Center: Status chips */}
+          <div className="hidden md:flex items-center gap-3 pointer-events-auto">
+            {isAuthenticated && (
+              <div className="glass rounded-full px-3 py-1.5 flex items-center gap-2 text-[11px]" style={{ color: 'var(--text-secondary)' }}>
+                <div className="w-1.5 h-1.5 rounded-full pulse-glow" style={{ background: 'var(--accent)' }} />
+                <span style={{ color: 'var(--accent)' }}>{Object.keys(positions).length}</span>
+                <span>tracking</span>
               </div>
             )}
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Username</label>
-                <input
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-700 rounded border border-gray-600 focus:border-blue-500 outline-none"
-                  placeholder="Enter your Space-Track username"
-                  disabled={isLoading}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">Password</label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-700 rounded border border-gray-600 focus:border-blue-500 outline-none"
-                  placeholder="Enter your Space-Track password"
-                  disabled={isLoading}
-                  onKeyPress={(e) => e.key === 'Enter' && handleAuthentication()}
-                />
-              </div>
-
-              <button
-                onClick={handleAuthentication}
-                disabled={isLoading || !username || !password}
-                className="w-full py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded font-medium flex items-center justify-center gap-2"
-              >
-                {isLoading ? (
-                  <>
-                    <RefreshCw size={16} className="animate-spin" />
-                    Authenticating...
-                  </>
-                ) : (
-                  <>
-                    <Key size={16} />
-                    Sign In
-                  </>
-                )}
-              </button>
-            </div>
-
-            <div className="mt-4 text-xs text-gray-400">
-              <p>Note: Your credentials are stored locally in your browser for convenience.</p>
-              <p className="mt-2">
-                Tip: You can also set <code className="bg-gray-700 px-1 rounded">VITE_SPACETRACK_USERNAME</code> and{' '}
-                <code className="bg-gray-700 px-1 rounded">VITE_SPACETRACK_PASSWORD</code> in a <code className="bg-gray-700 px-1 rounded">.env</code> file to skip this dialog.
-              </p>
+            <div className="glass rounded-full px-3 py-1.5 text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
+              {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
             </div>
           </div>
-        </div>
-      )}
 
-      {/*location prompt dialog*/}
-      {showLocationPrompt && !showAuthDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 border border-gray-700">
-            <div className="flex items-center gap-3 mb-4">
-              <MapPin className="text-blue-400" size={24} />
-              <h2 className="text-xl font-bold">Set Your Location</h2>
-            </div>
-
-            <p className="text-sm text-gray-400 mb-4">
-              To see satellite visibility, pass predictions, and accurate tracking from your location, please share your GPS coordinates.
-            </p>
-
-            <div className="bg-blue-900 border border-blue-600 text-blue-200 px-4 py-3 rounded mb-4 text-sm">
-              <p className="font-semibold mb-1">Why do we need your location?</p>
-              <ul className="list-disc list-inside space-y-1 text-xs">
-                <li>Calculate when satellites pass over <strong>your</strong> location</li>
-                <li>Show elevation and azimuth angles for viewing</li>
-                <li>Display a red marker showing where you are on Earth</li>
-              </ul>
-            </div>
-
-            <div className="space-y-3">
+          {/* Right: Action buttons */}
+          <div className="flex items-center gap-2 pointer-events-auto">
+            {isAuthenticated && (
               <button
-                onClick={getUserLocation}
-                disabled={gettingLocation}
-                className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded font-medium flex items-center justify-center gap-2"
+                onClick={refreshTles}
+                className="glass rounded-lg px-3 py-2 flex items-center gap-2 text-[11px] hover:bg-white/5 transition-colors"
+                style={{ color: 'var(--text-secondary)' }}
+                title="Refresh TLE data"
               >
-                {gettingLocation ? (
-                  <>
-                    <RefreshCw size={16} className="animate-spin" />
-                    Getting Location...
-                  </>
-                ) : (
-                  <>
-                    <MapPin size={16} />
-                    Share My Location
-                  </>
-                )}
+                <RefreshCw size={13} />
+                <span className="hidden sm:inline">Refresh</span>
               </button>
-
-              <button
-                onClick={skipLocationSetup}
-                disabled={gettingLocation}
-                className="w-full py-2 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-600 disabled:cursor-not-allowed rounded text-sm"
-              >
-                Skip for Now
-              </button>
-            </div>
-
-            <div className="mt-4 text-xs text-gray-400">
-              <p>You can always set your location later in the Passes or Visibility tabs.</p>
-            </div>
+            )}
+            <button
+              onClick={() => setShowSettingsPanel(!showSettingsPanel)}
+              className={`glass rounded-lg w-10 h-10 flex items-center justify-center transition-colors ${showSettingsPanel ? 'bg-white/5' : 'hover:bg-white/5'}`}
+            >
+              <Settings size={16} style={{ color: showSettingsPanel ? 'var(--accent)' : 'var(--text-secondary)' }} />
+            </button>
           </div>
-        </div>
-      )}
-
-      {/*header*/}
-      <div className="bg-gray-800 border-b border-gray-700 p-4 flex items-center justify-between flex-shrink-0">
-        <div className="flex items-center gap-3">
-          <Satellite className="text-blue-400" size={28} />
-          <div>
-            <h1 className="text-xl font-bold">Satellite Tracker</h1>
-            <p className="text-xs text-gray-400">
-              {isAuthenticated ? (
-                <>
-                  <span className="inline-flex items-center gap-1">
-                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                    Connected to Space-Track.org
-                  </span>
-                  {' • '}
-                  Tracking {satellites.length} satellites
-                  {' • '}
-                  Updated {lastTleUpdate.toLocaleTimeString()}
-                </>
-              ) : (
-                <>
-                  <span className="inline-flex items-center gap-1">
-                    <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
-                    Not connected - Click Settings to login
-                  </span>
-                </>
-              )}
-            </p>
-          </div>
-        </div>
-        
-        <div className="flex gap-2">
-          <button
-            onClick={refreshTles}
-            className="px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded flex items-center gap-2"
-          >
-            <RefreshCw size={16} />
-            Refresh TLEs
-          </button>
-          <button
-            onClick={() => setShowSettings(!showSettings)}
-            className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded flex items-center gap-2"
-          >
-            <Settings size={16} />
-            Settings
-          </button>
         </div>
       </div>
 
-      <div className="flex flex-1 overflow-hidden w-full">
-        {/*sidebar*/}
-        <div className="w-80 bg-gray-800 border-r border-gray-700 flex flex-col flex-shrink-0">
-          {/*tabs*/}
-          <div className="flex border-b border-gray-700">
-            <button
-              onClick={() => setActiveTab('tracking')}
-              className={`flex-1 px-4 py-3 text-sm font-medium flex items-center justify-center gap-2 ${
-                activeTab === 'tracking' ? 'bg-gray-700 text-blue-400' : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              <Target size={16} />
-              Tracking
-            </button>
-            <button
-              onClick={() => setActiveTab('passes')}
-              className={`flex-1 px-4 py-3 text-sm font-medium flex items-center justify-center gap-2 ${
-                activeTab === 'passes' ? 'bg-gray-700 text-blue-400' : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              <Clock size={16} />
-              Passes
-            </button>
-            <button
-              onClick={() => setActiveTab('visibility')}
-              className={`flex-1 px-4 py-3 text-sm font-medium flex items-center justify-center gap-2 ${
-                activeTab === 'visibility' ? 'bg-gray-700 text-blue-400' : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              <Eye size={16} />
-              Visibility
-            </button>
+      {/* ═══ LEFT DRAWER (Satellite List + Tabs) ═══ */}
+      {showDrawer && (
+        <div className="absolute top-16 left-4 bottom-4 z-40 w-80 glass-solid rounded-xl overflow-hidden flex flex-col drawer-enter">
+          {/* Drawer tabs */}
+          <div className="flex border-b" style={{ borderColor: 'var(--glass-border)' }}>
+            {[
+              { id: 'tracking', icon: Crosshair, label: 'Track' },
+              { id: 'passes', icon: Clock, label: 'Passes' },
+              { id: 'visibility', icon: Eye, label: 'Vis' },
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className="flex-1 py-3 text-[11px] font-medium flex items-center justify-center gap-1.5 transition-colors relative"
+                style={{ color: activeTab === tab.id ? 'var(--accent)' : 'var(--text-tertiary)' }}
+              >
+                <tab.icon size={13} />
+                {tab.label}
+                {activeTab === tab.id && (
+                  <div className="absolute bottom-0 left-2 right-2 h-[2px] rounded-full" style={{ background: 'var(--accent)' }} />
+                )}
+              </button>
+            ))}
           </div>
 
-          {/*tracking tab*/}
+          {/* ─── TRACKING TAB ─── */}
           {activeTab === 'tracking' && (
             <>
-              <div className="p-4 border-b border-gray-700">
+              <div className="p-3" style={{ borderBottom: '1px solid var(--glass-border)' }}>
                 <div className="relative">
-                  <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
+                  <Search className="absolute left-3 top-2.5" size={14} style={{ color: 'var(--text-tertiary)' }} />
                   <input
                     type="text"
                     placeholder="Search satellites..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 bg-gray-700 rounded border border-gray-600 focus:border-blue-500 outline-none"
+                    className="w-full pl-9 pr-3 py-2 rounded-lg text-xs outline-none transition-colors"
+                    style={{
+                      background: 'rgba(255,255,255,0.03)',
+                      border: '1px solid var(--glass-border)',
+                      color: 'var(--text-primary)',
+                    }}
                   />
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto">
+              <div className="flex-1 overflow-y-auto custom-scroll">
                 {isLoading && (
-                  <div className="flex items-center justify-center p-8">
+                  <div className="flex items-center justify-center p-10">
                     <div className="text-center">
-                      <RefreshCw size={32} className="animate-spin mx-auto mb-2 text-blue-400" />
-                      <p className="text-sm text-gray-400">Loading satellites...</p>
+                      <RefreshCw size={20} className="animate-spin mx-auto mb-3" style={{ color: 'var(--accent)' }} />
+                      <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>Loading satellites...</p>
                     </div>
                   </div>
                 )}
 
                 {!isLoading && filteredSatellites.length === 0 && (
-                  <div className="flex items-center justify-center p-8">
-                    <div className="text-center text-gray-400">
-                      <Satellite size={32} className="mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">No satellites found</p>
+                  <div className="flex items-center justify-center p-10">
+                    <div className="text-center" style={{ color: 'var(--text-tertiary)' }}>
+                      <Satellite size={24} className="mx-auto mb-2 opacity-40" />
+                      <p className="text-[11px]">No satellites found</p>
                     </div>
                   </div>
                 )}
 
                 {!isLoading && filteredSatellites.map(sat => {
                   const pos = positions[sat.id];
+                  const isActive = selectedSatellite?.id === sat.id;
                   return (
                     <div
                       key={sat.id}
                       onClick={() => setSelectedSatellite(sat)}
-                      className={`p-3 border-b border-gray-700 cursor-pointer hover:bg-gray-700 ${
-                        selectedSatellite?.id === sat.id ? 'bg-gray-700' : ''
-                      }`}
+                      className="px-3 py-2.5 cursor-pointer transition-all group"
+                      style={{
+                        borderBottom: '1px solid rgba(56, 243, 191, 0.04)',
+                        background: isActive ? 'var(--accent-glow)' : 'transparent',
+                      }}
+                      onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; }}
+                      onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
                     >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="font-semibold flex items-center gap-2">
-                            <div
-                              className="w-2 h-2 rounded-full"
-                              style={{ backgroundColor: getCategoryColor(sat.category) }}
-                            />
-                            {sat.name}
-                          </div>
-                          <div className="text-xs text-gray-400 mt-1">
-                            NORAD ID: {sat.id}
+                      <div className="flex items-center gap-2.5">
+                        <div
+                          className="w-2 h-2 rounded-full flex-shrink-0"
+                          style={{
+                            backgroundColor: getCategoryColor(sat.category),
+                            boxShadow: isActive ? `0 0 8px ${getCategoryColor(sat.category)}` : 'none',
+                          }}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-medium truncate" style={{ color: isActive ? 'var(--accent)' : 'var(--text-primary)' }}>
+                              {sat.name}
+                            </span>
+                            {pos && (
+                              <span className="text-[10px] ml-2 flex-shrink-0" style={{ color: 'var(--text-tertiary)' }}>
+                                {getOrbitType(pos.altitude)}
+                              </span>
+                            )}
                           </div>
                           {pos && (
-                            <div className="text-xs text-gray-400 mt-1 space-y-0.5">
-                              <div>Lat: {pos.latitude.toFixed(4)}°</div>
-                              <div>Lon: {pos.longitude.toFixed(4)}°</div>
-                              <div>Alt: {pos.altitude.toFixed(1)} km ({getOrbitType(pos.altitude)})</div>
+                            <div className="flex gap-3 mt-0.5 text-[10px]" style={{ color: 'var(--text-tertiary)', fontVariantNumeric: 'tabular-nums' }}>
+                              <span>{pos.latitude.toFixed(2)}°</span>
+                              <span>{pos.longitude.toFixed(2)}°</span>
+                              <span>{pos.altitude.toFixed(0)} km</span>
                             </div>
                           )}
                         </div>
+                        <ChevronRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" style={{ color: 'var(--text-tertiary)' }} />
                       </div>
                     </div>
                   );
                 })}
               </div>
+
+              {/* Category legend */}
+              <div className="px-3 py-2 flex flex-wrap gap-x-3 gap-y-1" style={{ borderTop: '1px solid var(--glass-border)' }}>
+                {['station', 'starlink', 'weather', 'navigation'].map(cat => (
+                  <div key={cat} className="flex items-center gap-1.5 text-[9px] uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>
+                    <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: getCategoryColor(cat) }} />
+                    {cat}
+                  </div>
+                ))}
+              </div>
             </>
           )}
 
-          {/*passes tab*/}
+          {/* ─── PASSES TAB ─── */}
           {activeTab === 'passes' && (
-            <div className="flex-1 overflow-y-auto">
-              <div className="p-4 border-b border-gray-700">
+            <div className="flex-1 overflow-y-auto custom-scroll">
+              <div className="p-3" style={{ borderBottom: '1px solid var(--glass-border)' }}>
                 <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <MapPin size={16} className="text-blue-400" />
-                    <span className="text-sm font-semibold">Observer Location</span>
-                  </div>
+                  <span className="text-[11px] font-medium" style={{ color: 'var(--text-secondary)' }}>Observer</span>
                   <button
                     onClick={getUserLocation}
                     disabled={gettingLocation}
-                    className="px-2 py-1 text-xs bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 rounded flex items-center gap-1"
-                    title="Get your actual location"
+                    className="px-2 py-1 rounded-md text-[10px] flex items-center gap-1 transition-colors"
+                    style={{
+                      background: 'rgba(56, 243, 191, 0.1)',
+                      color: 'var(--accent)',
+                      border: '1px solid rgba(56, 243, 191, 0.2)',
+                    }}
                   >
-                    {gettingLocation ? (
-                      <>
-                        <RefreshCw size={12} className="animate-spin" />
-                        Getting...
-                      </>
-                    ) : (
-                      <>
-                        <MapPin size={12} />
-                        {observerLocation ? 'Update Location' : 'Set My Location'}
-                      </>
-                    )}
+                    {gettingLocation ? <RefreshCw size={10} className="animate-spin" /> : <MapPin size={10} />}
+                    {observerLocation ? 'Update' : 'Set Location'}
                   </button>
                 </div>
                 {observerLocation ? (
-                  <div className="text-xs text-gray-400 space-y-1">
-                    <div>{observerLocation.name}</div>
-                    <div>Lat: {observerLocation.lat.toFixed(4)}°</div>
-                    <div>Lon: {observerLocation.lon.toFixed(4)}°</div>
+                  <div className="text-[10px] space-y-0.5" style={{ color: 'var(--text-tertiary)', fontVariantNumeric: 'tabular-nums' }}>
+                    <div>{observerLocation.lat.toFixed(4)}° N, {observerLocation.lon.toFixed(4)}° E</div>
                   </div>
                 ) : (
-                  <div className="text-xs text-yellow-400 bg-yellow-900 bg-opacity-20 border border-yellow-600 rounded p-2 mt-2">
-                    <p>No location set. Click "Set My Location" to enable pass predictions.</p>
+                  <div className="text-[10px] px-2 py-1.5 rounded" style={{ background: 'rgba(251, 191, 36, 0.06)', border: '1px solid rgba(251, 191, 36, 0.15)', color: 'var(--warn)' }}>
+                    Set location to enable predictions
                   </div>
                 )}
               </div>
 
               {selectedSatellite ? (
                 <>
-                  <div className="p-4 border-b border-gray-700 bg-gray-750">
-                    <div className="font-semibold mb-2">{selectedSatellite.name}</div>
-                    <div className="text-xs text-gray-400">
-                      {upcomingPasses.length} passes in next 24 hours
+                  <div className="p-3" style={{ borderBottom: '1px solid var(--glass-border)' }}>
+                    <div className="text-xs font-medium" style={{ color: 'var(--accent)' }}>{selectedSatellite.name}</div>
+                    <div className="text-[10px] mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                      {upcomingPasses.length} passes / 24h
                     </div>
                   </div>
-
-                  <div className="flex-1 overflow-y-auto">
-                    {upcomingPasses.map((pass, idx) => (
-                      <div key={idx} className="p-4 border-b border-gray-700 hover:bg-gray-750">
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <Clock size={16} className="text-green-400" />
-                            <span className="font-semibold text-sm">Pass #{idx + 1}</span>
-                          </div>
-                          <div className="text-xs px-2 py-1 bg-blue-600 rounded">
-                            {pass.maxElevation.toFixed(1)}° max
-                          </div>
-                        </div>
-                        
-                        <div className="space-y-1 text-xs text-gray-400">
-                          <div className="flex justify-between">
-                            <span>Start:</span>
-                            <span className="text-white">{pass.startTime.toLocaleTimeString()}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>End:</span>
-                            <span className="text-white">{pass.endTime.toLocaleTimeString()}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Duration:</span>
-                            <span className="text-white">{formatDuration(pass.duration)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Start Az:</span>
-                            <span className="text-white">{pass.startAzimuth.toFixed(1)}°</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>End Az:</span>
-                            <span className="text-white">{pass.endAzimuth.toFixed(1)}°</span>
-                          </div>
-                        </div>
+                  {upcomingPasses.map((pass, idx) => (
+                    <div key={idx} className="p-3 transition-colors hover:bg-white/[0.02]" style={{ borderBottom: '1px solid rgba(56, 243, 191, 0.04)' }}>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[11px] font-medium" style={{ color: 'var(--text-primary)' }}>Pass #{idx + 1}</span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'rgba(56, 243, 191, 0.1)', color: 'var(--accent)' }}>
+                          {pass.maxElevation.toFixed(1)}° max
+                        </span>
                       </div>
-                    ))}
-
-                    {upcomingPasses.length === 0 && (
-                      <div className="p-8 text-center text-gray-400 text-sm">
-                        <Navigation size={32} className="mx-auto mb-2 opacity-50" />
-                        <p>No passes above 10° elevation</p>
-                        <p className="text-xs mt-1">in the next 24 hours</p>
+                      <div className="space-y-1 text-[10px]" style={{ fontVariantNumeric: 'tabular-nums' }}>
+                        {[
+                          ['Start', pass.startTime.toLocaleTimeString()],
+                          ['End', pass.endTime.toLocaleTimeString()],
+                          ['Duration', formatDuration(pass.duration)],
+                          ['Az', `${pass.startAzimuth.toFixed(0)}° → ${pass.endAzimuth.toFixed(0)}°`],
+                        ].map(([label, val]) => (
+                          <div key={label} className="flex justify-between">
+                            <span style={{ color: 'var(--text-tertiary)' }}>{label}</span>
+                            <span style={{ color: 'var(--text-secondary)' }}>{val}</span>
+                          </div>
+                        ))}
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  ))}
+                  {upcomingPasses.length === 0 && (
+                    <div className="p-8 text-center">
+                      <Navigation size={20} className="mx-auto mb-2 opacity-30" style={{ color: 'var(--text-tertiary)' }} />
+                      <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>No passes above 10°</p>
+                    </div>
+                  )}
                 </>
               ) : (
-                <div className="flex-1 flex items-center justify-center">
-                  <div className="text-center text-gray-400 text-sm p-8">
-                    <Target size={32} className="mx-auto mb-2 opacity-50" />
-                    <p>Select a satellite to see</p>
-                    <p>upcoming passes</p>
+                <div className="flex-1 flex items-center justify-center p-8">
+                  <div className="text-center">
+                    <Crosshair size={20} className="mx-auto mb-2 opacity-30" style={{ color: 'var(--text-tertiary)' }} />
+                    <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>Select a satellite</p>
                   </div>
                 </div>
               )}
             </div>
           )}
 
-          {/*visibility tab*/}
+          {/* ─── VISIBILITY TAB ─── */}
           {activeTab === 'visibility' && (
-            <div className="flex-1 overflow-y-auto">
-              <div className="p-4 border-b border-gray-700">
+            <div className="flex-1 overflow-y-auto custom-scroll">
+              <div className="p-3" style={{ borderBottom: '1px solid var(--glass-border)' }}>
                 <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <MapPin size={16} className="text-blue-400" />
-                    <span className="text-sm font-semibold">Observer Location</span>
-                  </div>
+                  <span className="text-[11px] font-medium" style={{ color: 'var(--text-secondary)' }}>Observer</span>
                   <button
                     onClick={getUserLocation}
                     disabled={gettingLocation}
-                    className="px-2 py-1 text-xs bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 rounded flex items-center gap-1"
-                    title="Get your actual location"
+                    className="px-2 py-1 rounded-md text-[10px] flex items-center gap-1 transition-colors"
+                    style={{
+                      background: 'rgba(56, 243, 191, 0.1)',
+                      color: 'var(--accent)',
+                      border: '1px solid rgba(56, 243, 191, 0.2)',
+                    }}
                   >
-                    {gettingLocation ? (
-                      <>
-                        <RefreshCw size={12} className="animate-spin" />
-                        Getting...
-                      </>
-                    ) : (
-                      <>
-                        <MapPin size={12} />
-                        {observerLocation ? 'Update Location' : 'Set My Location'}
-                      </>
-                    )}
+                    {gettingLocation ? <RefreshCw size={10} className="animate-spin" /> : <MapPin size={10} />}
+                    {observerLocation ? 'Update' : 'Set Location'}
                   </button>
                 </div>
                 {observerLocation ? (
-                  <div className="text-xs text-gray-400 space-y-1">
-                    <div>{observerLocation.name}</div>
-                    <div>Lat: {observerLocation.lat.toFixed(4)}°</div>
-                    <div>Lon: {observerLocation.lon.toFixed(4)}°</div>
+                  <div className="text-[10px]" style={{ color: 'var(--text-tertiary)', fontVariantNumeric: 'tabular-nums' }}>
+                    {observerLocation.lat.toFixed(4)}° N, {observerLocation.lon.toFixed(4)}° E
                   </div>
                 ) : (
-                  <div className="text-xs text-yellow-400 bg-yellow-900 bg-opacity-20 border border-yellow-600 rounded p-2 mt-2">
-                    <p>No location set. Click "Set My Location" to see visibility information.</p>
+                  <div className="text-[10px] px-2 py-1.5 rounded" style={{ background: 'rgba(251, 191, 36, 0.06)', border: '1px solid rgba(251, 191, 36, 0.15)', color: 'var(--warn)' }}>
+                    Set location for visibility data
                   </div>
                 )}
               </div>
 
               {selectedSatellite && visibility ? (
-                <div className="p-4">
-                  <div className="font-semibold mb-4">{selectedSatellite.name}</div>
-                  
-                  <div className={`p-4 rounded-lg mb-4 ${visibility.isVisible ? 'bg-green-900 border border-green-600' : 'bg-red-900 border border-red-600'}`}>
-                    <div className="flex items-center gap-2 mb-2">
-                      <Eye size={16} />
-                      <span className="font-semibold">
-                        {visibility.isVisible ? 'Currently Visible' : 'Below Horizon'}
+                <div className="p-3 space-y-4">
+                  <div className="text-xs font-medium" style={{ color: 'var(--accent)' }}>{selectedSatellite.name}</div>
+
+                  {/* Visibility status */}
+                  <div className="px-3 py-2.5 rounded-lg flex items-center gap-2" style={{
+                    background: visibility.isVisible ? 'rgba(56, 243, 191, 0.08)' : 'rgba(244, 63, 94, 0.08)',
+                    border: `1px solid ${visibility.isVisible ? 'rgba(56, 243, 191, 0.2)' : 'rgba(244, 63, 94, 0.2)'}`,
+                  }}>
+                    <Radio size={13} style={{ color: visibility.isVisible ? 'var(--accent)' : 'var(--danger)' }} />
+                    <span className="text-[11px] font-medium" style={{ color: visibility.isVisible ? 'var(--accent)' : 'var(--danger)' }}>
+                      {visibility.isVisible ? 'VISIBLE' : 'BELOW HORIZON'}
+                    </span>
+                  </div>
+
+                  {/* Elevation */}
+                  <div>
+                    <div className="text-[10px] mb-1.5 uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>Elevation</div>
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                        <div
+                          className="h-full rounded-full transition-all"
+                          style={{
+                            width: `${Math.max(0, Math.min(100, (visibility.elevation + 90) / 180 * 100))}%`,
+                            background: visibility.elevation > 0 ? 'var(--accent)' : 'var(--danger)',
+                            boxShadow: `0 0 8px ${visibility.elevation > 0 ? 'var(--accent-dim)' : 'rgba(244,63,94,0.5)'}`,
+                          }}
+                        />
+                      </div>
+                      <span className="text-sm font-semibold tabular-nums w-14 text-right" style={{ color: 'var(--text-primary)' }}>
+                        {visibility.elevation.toFixed(1)}°
                       </span>
                     </div>
                   </div>
 
-                  <div className="space-y-4">
-                    <div>
-                      <div className="text-sm text-gray-400 mb-2">Elevation Angle</div>
-                      <div className="flex items-center gap-3">
-                        <div className="flex-1 bg-gray-700 rounded-full h-2">
-                          <div
-                            className={`h-2 rounded-full transition-all ${
-                              visibility.elevation > 0 ? 'bg-green-500' : 'bg-red-500'
-                            }`}
-                            style={{ width: `${Math.max(0, Math.min(100, (visibility.elevation + 90) / 180 * 100))}%` }}
-                          />
+                  {/* Azimuth compass */}
+                  <div>
+                    <div className="text-[10px] mb-2 uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>Azimuth</div>
+                    <div className="flex items-center gap-4">
+                      <div className="relative w-24 h-24">
+                        <div className="absolute inset-0 rounded-full" style={{ border: '1px solid var(--glass-border)' }} />
+                        <div className="absolute inset-2 rounded-full" style={{ border: '1px solid rgba(56,243,191,0.06)' }} />
+                        {['N', 'E', 'S', 'W'].map((d, i) => (
+                          <div key={d} className="absolute text-[8px] font-medium" style={{
+                            color: 'var(--text-tertiary)',
+                            ...(i === 0 ? { top: '-14px', left: '50%', transform: 'translateX(-50%)' } :
+                                i === 1 ? { right: '-10px', top: '50%', transform: 'translateY(-50%)' } :
+                                i === 2 ? { bottom: '-14px', left: '50%', transform: 'translateX(-50%)' } :
+                                { left: '-12px', top: '50%', transform: 'translateY(-50%)' })
+                          }}>{d}</div>
+                        ))}
+                        <div
+                          className="absolute top-1/2 left-1/2 w-0.5 h-9 origin-bottom"
+                          style={{
+                            background: `linear-gradient(to top, transparent, var(--accent))`,
+                            transform: `translate(-50%, -100%) rotate(${visibility.azimuth}deg)`,
+                            transition: 'transform 0.3s ease',
+                          }}
+                        >
+                          <div className="w-2 h-2 rounded-full absolute -top-1 left-1/2 -translate-x-1/2" style={{ background: 'var(--accent)', boxShadow: '0 0 6px var(--accent-dim)' }} />
                         </div>
-                        <span className="font-bold text-lg w-16 text-right">
-                          {visibility.elevation.toFixed(1)}°
-                        </span>
+                        <div className="absolute top-1/2 left-1/2 w-1 h-1 rounded-full -translate-x-1/2 -translate-y-1/2" style={{ background: 'var(--text-tertiary)' }} />
                       </div>
-                      <div className="text-xs text-gray-400 mt-1">
-                        {visibility.elevation < 0 ? 'Below horizon' : 
-                         visibility.elevation < 10 ? 'Very low - poor visibility' :
-                         visibility.elevation < 30 ? 'Low - fair visibility' :
-                         visibility.elevation < 60 ? 'Good visibility' : 'Excellent visibility'}
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="text-sm text-gray-400 mb-2">Azimuth</div>
-                      <div className="flex items-center justify-between">
-                        <div className="relative w-32 h-32 mx-auto">
-                          {/*compass*/}
-                          <div className="absolute inset-0 border-2 border-gray-600 rounded-full" />
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="text-xs text-gray-400">
-                              <div className="absolute -top-6 left-1/2 -translate-x-1/2">N</div>
-                              <div className="absolute -right-6 top-1/2 -translate-y-1/2">E</div>
-                              <div className="absolute -bottom-6 left-1/2 -translate-x-1/2">S</div>
-                              <div className="absolute -left-6 top-1/2 -translate-y-1/2">W</div>
-                            </div>
-                          </div>
-                          {/*direction pointer*/}
-                          <div
-                            className="absolute top-1/2 left-1/2 w-1 h-12 bg-blue-500 origin-bottom transition-transform"
-                            style={{
-                              transform: `translate(-50%, -100%) rotate(${visibility.azimuth}deg)`
-                            }}
-                          >
-                            <div className="w-3 h-3 bg-blue-500 rounded-full absolute -top-1 left-1/2 -translate-x-1/2" />
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="font-bold text-2xl">{visibility.azimuth.toFixed(1)}°</div>
-                          <div className="text-xs text-gray-400 mt-1">
-                            {visibility.azimuth >= 337.5 || visibility.azimuth < 22.5 ? 'North' :
-                             visibility.azimuth < 67.5 ? 'Northeast' :
-                             visibility.azimuth < 112.5 ? 'East' :
-                             visibility.azimuth < 157.5 ? 'Southeast' :
-                             visibility.azimuth < 202.5 ? 'South' :
-                             visibility.azimuth < 247.5 ? 'Southwest' :
-                             visibility.azimuth < 292.5 ? 'West' : 'Northwest'}
-                          </div>
+                      <div>
+                        <div className="text-lg font-bold tabular-nums" style={{ color: 'var(--text-primary)' }}>{visibility.azimuth.toFixed(1)}°</div>
+                        <div className="text-[10px] mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                          {visibility.azimuth >= 337.5 || visibility.azimuth < 22.5 ? 'North' :
+                           visibility.azimuth < 67.5 ? 'NE' : visibility.azimuth < 112.5 ? 'East' :
+                           visibility.azimuth < 157.5 ? 'SE' : visibility.azimuth < 202.5 ? 'South' :
+                           visibility.azimuth < 247.5 ? 'SW' : visibility.azimuth < 292.5 ? 'West' : 'NW'}
                         </div>
                       </div>
                     </div>
-
-                    <div>
-                      <div className="text-sm text-gray-400 mb-2">Range</div>
-                      <div className="font-bold text-xl">{visibility.range.toFixed(1)} km</div>
-                      <div className="text-xs text-gray-400 mt-1">
-                        Distance from observer
-                      </div>
-                    </div>
-
-                    {upcomingPasses.length > 0 && (
-                      <div className="border-t border-gray-700 pt-4">
-                        <div className="text-sm text-gray-400 mb-2">Next Pass</div>
-                        <div className="bg-gray-750 p-3 rounded">
-                          <div className="flex justify-between text-sm mb-2">
-                            <span className="text-gray-400">Start:</span>
-                            <span>{upcomingPasses[0].startTime.toLocaleTimeString()}</span>
-                          </div>
-                          <div className="flex justify-between text-sm mb-2">
-                            <span className="text-gray-400">Max Elevation:</span>
-                            <span className="text-green-400 font-semibold">
-                              {upcomingPasses[0].maxElevation.toFixed(1)}°
-                            </span>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-gray-400">Duration:</span>
-                            <span>{formatDuration(upcomingPasses[0].duration)}</span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
                   </div>
+
+                  {/* Range */}
+                  <div>
+                    <div className="text-[10px] mb-1 uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>Range</div>
+                    <div className="text-sm font-bold tabular-nums" style={{ color: 'var(--text-primary)' }}>{visibility.range.toFixed(1)} km</div>
+                  </div>
+
+                  {upcomingPasses.length > 0 && (
+                    <div className="pt-3" style={{ borderTop: '1px solid var(--glass-border)' }}>
+                      <div className="text-[10px] uppercase tracking-wider mb-2" style={{ color: 'var(--text-tertiary)' }}>Next Pass</div>
+                      <div className="p-2.5 rounded-lg space-y-1.5" style={{ background: 'rgba(255,255,255,0.02)' }}>
+                        {[
+                          ['Start', upcomingPasses[0].startTime.toLocaleTimeString()],
+                          ['Max El', `${upcomingPasses[0].maxElevation.toFixed(1)}°`],
+                          ['Duration', formatDuration(upcomingPasses[0].duration)],
+                        ].map(([l, v]) => (
+                          <div key={l} className="flex justify-between text-[10px]">
+                            <span style={{ color: 'var(--text-tertiary)' }}>{l}</span>
+                            <span style={{ color: l === 'Max El' ? 'var(--accent)' : 'var(--text-secondary)' }}>{v}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
-                <div className="flex-1 flex items-center justify-center">
-                  <div className="text-center text-gray-400 text-sm p-8">
-                    <Eye size={32} className="mx-auto mb-2 opacity-50" />
-                    <p>Select a satellite to see</p>
-                    <p>visibility information</p>
+                <div className="flex-1 flex items-center justify-center p-8">
+                  <div className="text-center">
+                    <Eye size={20} className="mx-auto mb-2 opacity-30" style={{ color: 'var(--text-tertiary)' }} />
+                    <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>Select a satellite</p>
                   </div>
                 </div>
               )}
             </div>
           )}
         </div>
+      )}
 
-        {/*3d view*/}
-        <div className="flex-1 relative bg-black min-w-0 overflow-hidden">
-          <Canvas
-            camera={{ position: [15, 15, 15], fov: 60 }}
-            style={{ width: '100%', height: '100%' }}
-          >
-            <Scene3D
-              positions={positions}
-              satellites={satellites}
-              selectedSatellite={selectedSatellite}
-              observerLocation={observerLocation}
-              groundTrack={showGroundTrack ? groundTrack : []}
-              getCategoryColor={getCategoryColor}
-              showVisibilityCircle={showVisibilityCircle}
-            />
-          </Canvas>
+      {/* ═══ SETTINGS PANEL (Right side) ═══ */}
+      {showSettingsPanel && (
+        <div className="absolute top-16 right-4 z-40 w-72 glass-solid rounded-xl overflow-hidden fade-in">
+          <div className="p-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-display)' }}>Settings</span>
+              <button onClick={() => setShowSettingsPanel(false)} className="hover:opacity-70 transition-opacity">
+                <X size={14} style={{ color: 'var(--text-tertiary)' }} />
+              </button>
+            </div>
 
-          {/*controls*/}
-          <div className="absolute bottom-4 left-4 bg-black bg-opacity-60 rounded p-3 text-xs text-gray-300">
-            <div className="font-semibold mb-1">3D Controls</div>
-            <div>Left Click + Drag: Rotate</div>
-            <div>Right Click + Drag: Pan</div>
-            <div>Scroll: Zoom</div>
-          </div>
+            {/* Data Source */}
+            <div>
+              <div className="text-[10px] uppercase tracking-wider mb-2" style={{ color: 'var(--text-tertiary)' }}>Data Source</div>
+              <select
+                value={dataSource}
+                onChange={(e) => setDataSource(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg text-xs outline-none"
+                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--glass-border)', color: 'var(--text-primary)' }}
+              >
+                <option value="popular">Popular (ISS, HST...)</option>
+                <option value="category">By Category</option>
+                <option value="all">All Active (100)</option>
+              </select>
+            </div>
 
-          {/*selected sat info*/}
-          {selectedSatellite && positions[selectedSatellite.id] && (
-            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-80 rounded-lg p-4 min-w-96">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-bold text-lg">{selectedSatellite.name}</h3>
-                <button
-                  onClick={() => setSelectedSatellite(null)}
-                  className="text-gray-400 hover:text-white"
+            {dataSource === 'category' && (
+              <div>
+                <div className="text-[10px] uppercase tracking-wider mb-2" style={{ color: 'var(--text-tertiary)' }}>Category</div>
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg text-xs outline-none"
+                  style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--glass-border)', color: 'var(--text-primary)' }}
                 >
-                  ×
-                </button>
+                  <option value="station">Space Stations</option>
+                  <option value="starlink">Starlink</option>
+                  <option value="weather">Weather</option>
+                  <option value="navigation">Navigation</option>
+                </select>
               </div>
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div>
-                  <div className="text-gray-400">Position</div>
-                  <div>{positions[selectedSatellite.id].latitude.toFixed(4)}° N</div>
-                  <div>{positions[selectedSatellite.id].longitude.toFixed(4)}° E</div>
-                </div>
-                <div>
-                  <div className="text-gray-400">Altitude</div>
-                  <div>{positions[selectedSatellite.id].altitude.toFixed(2)} km</div>
-                  <div className="text-gray-400">
-                    {getOrbitType(positions[selectedSatellite.id].altitude)} Orbit
+            )}
+
+            {/* Display */}
+            <div className="pt-2" style={{ borderTop: '1px solid var(--glass-border)' }}>
+              <div className="text-[10px] uppercase tracking-wider mb-3" style={{ color: 'var(--text-tertiary)' }}>Display</div>
+              <div className="space-y-2.5">
+                <label className="flex items-center gap-2.5 text-[11px] cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
+                  <input type="checkbox" checked={showGroundTrack} onChange={(e) => setShowGroundTrack(e.target.checked)} />
+                  Ground Track
+                </label>
+                {showGroundTrack && (
+                  <div className="ml-5 space-y-1.5">
+                    {[['fixed', '3 hours'], ['full', 'Full orbit']].map(([val, label]) => (
+                      <label key={val} className="flex items-center gap-2 text-[10px] cursor-pointer" style={{ color: 'var(--text-tertiary)' }}>
+                        <input type="radio" name="groundTrackMode" value={val} checked={groundTrackMode === val} onChange={(e) => setGroundTrackMode(e.target.value)} />
+                        {label}
+                      </label>
+                    ))}
                   </div>
-                </div>
-                {visibility && (
-                  <>
-                    <div>
-                      <div className="text-gray-400">Elevation</div>
-                      <div className={visibility.isVisible ? 'text-green-400' : 'text-red-400'}>
-                        {visibility.elevation.toFixed(1)}°
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-gray-400">Azimuth</div>
-                      <div>{visibility.azimuth.toFixed(1)}°</div>
-                    </div>
-                  </>
                 )}
+                <label className="flex items-center gap-2.5 text-[11px] cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
+                  <input type="checkbox" checked={showVisibilityCircle} onChange={(e) => setShowVisibilityCircle(e.target.checked)} />
+                  Visibility Circle
+                </label>
               </div>
-              {upcomingPasses.length > 0 && (
-                <div className="mt-3 pt-3 border-t border-gray-700 text-xs">
-                  <div className="text-gray-400">Next pass in {Math.round((upcomingPasses[0].startTime - new Date()) / 60000)} minutes</div>
-                </div>
-              )}
             </div>
-          )}
-        </div>
 
-        {/*right sidebar, settings or system status*/}
-        <div className="w-80 bg-gray-800 border-l border-gray-700 flex flex-col overflow-y-auto flex-shrink-0">
-          <div className="p-4">
-            {showSettings ? (
-              <>
-                {/*settings panel*/}
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <Settings size={16} className="text-blue-400" />
-                    <h3 className="font-semibold text-sm">Settings</h3>
-                  </div>
-                  <button
-                    onClick={() => setShowSettings(false)}
-                    className="text-gray-400 hover:text-white"
-                  >
-                    ×
-                  </button>
+            {/* Performance */}
+            <div className="pt-2" style={{ borderTop: '1px solid var(--glass-border)' }}>
+              <div className="text-[10px] uppercase tracking-wider mb-3" style={{ color: 'var(--text-tertiary)' }}>Performance</div>
+              <div>
+                <div className="flex justify-between mb-1.5">
+                  <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>Update interval</span>
+                  <span className="text-[10px] tabular-nums" style={{ color: 'var(--text-secondary)' }}>{updateInterval}ms</span>
                 </div>
-
-                <div className="space-y-4">
-                  {/*data source settings*/}
-                  <div>
-                    <h3 className="font-semibold mb-3 text-sm">Data Source</h3>
-                    <div className="space-y-3">
-                      <div>
-                        <label className="text-xs text-gray-400 mb-2 block">Select Data Source</label>
-                        <select
-                          value={dataSource}
-                          onChange={(e) => setDataSource(e.target.value)}
-                          className="w-full px-3 py-2 bg-gray-700 rounded border border-gray-600 focus:border-blue-500 outline-none text-sm"
-                        >
-                          <option value="popular">Popular Satellites (ISS, HST, etc.)</option>
-                          <option value="category">By Category</option>
-                          <option value="all">All Active Satellites (100)</option>
-                        </select>
-                      </div>
-
-                      {dataSource === 'category' && (
-                        <div>
-                          <label className="text-xs text-gray-400 mb-2 block">Category</label>
-                          <select
-                            value={selectedCategory}
-                            onChange={(e) => setSelectedCategory(e.target.value)}
-                            className="w-full px-3 py-2 bg-gray-700 rounded border border-gray-600 focus:border-blue-500 outline-none text-sm"
-                          >
-                            <option value="station">Space Stations</option>
-                            <option value="starlink">Starlink</option>
-                            <option value="weather">Weather Satellites</option>
-                            <option value="navigation">Navigation (GPS, etc.)</option>
-                          </select>
-                        </div>
-                      )}
-
-                      {isAuthenticated && (
-                        <button
-                          onClick={() => setShowAuthDialog(true)}
-                          className="w-full py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm flex items-center justify-center gap-2"
-                        >
-                          <Key size={14} />
-                          Change Login
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {/*performance settings*/}
-                  <div className="pt-3 border-t border-gray-700">
-                    <h3 className="font-semibold mb-3 text-sm">Performance Settings</h3>
-                    <div className="space-y-3">
-                      <div>
-                        <label className="text-xs text-gray-400 block mb-2">Update Interval (ms)</label>
-                        <input
-                          type="range"
-                          min="500"
-                          max="5000"
-                          step="500"
-                          value={updateInterval}
-                          onChange={(e) => setUpdateInterval(Number(e.target.value))}
-                          className="w-full"
-                        />
-                        <div className="text-xs text-gray-400 mt-1">{updateInterval}ms</div>
-                      </div>
-                      <div className="space-y-2">
-                        <label className="flex items-center gap-2 text-sm">
-                          <input
-                            type="checkbox"
-                            checked={showGroundTrack}
-                            onChange={(e) => setShowGroundTrack(e.target.checked)}
-                            className="rounded"
-                          />
-                          Show Ground Track
-                        </label>
-                        {showGroundTrack && (
-                          <div className="ml-6 space-y-1">
-                            <label className="flex items-center gap-2 text-xs">
-                              <input
-                                type="radio"
-                                name="groundTrackMode"
-                                value="fixed"
-                                checked={groundTrackMode === 'fixed'}
-                                onChange={(e) => setGroundTrackMode(e.target.value)}
-                                className="rounded-full"
-                              />
-                              fixed 3 hrs
-                            </label>
-                            <label className="flex items-center gap-2 text-xs">
-                              <input
-                                type="radio"
-                                name="groundTrackMode"
-                                value="full"
-                                checked={groundTrackMode === 'full'}
-                                onChange={(e) => setGroundTrackMode(e.target.value)}
-                                className="rounded-full"
-                              />
-                              full orbit
-                            </label>
-                          </div>
-                        )}
-                        <label className="flex items-center gap-2 text-sm">
-                          <input
-                            type="checkbox"
-                            checked={showVisibilityCircle}
-                            onChange={(e) => setShowVisibilityCircle(e.target.checked)}
-                            className="rounded"
-                          />
-                          Show Visibility Circle
-                        </label>
-                      </div>
-                      <button
-                        onClick={() => setIsTracking(!isTracking)}
-                        className={`w-full py-2 rounded font-medium ${isTracking ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}
-                      >
-                        {isTracking ? 'Tracking Active' : 'Tracking Paused'}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <>
-                {/*system status panel*/}
-                <div className="flex items-center gap-2 mb-4">
-                  <Settings size={16} className="text-blue-400" />
-                  <h3 className="font-semibold text-sm">System Status</h3>
-                </div>
-
-                <div className="space-y-3 text-xs">
-              {/*data source*/}
-              <div className="bg-gray-900 p-3 rounded border border-gray-700">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className={`w-2 h-2 rounded-full ${isAuthenticated ? 'bg-green-500' : 'bg-yellow-500'}`}></span>
-                  <span className="text-gray-400">Data Source</span>
-                </div>
-                <div className="text-white">{isAuthenticated ? 'Space-Track.org (Real Data)' : 'Not Connected'}</div>
+                <input
+                  type="range" min="500" max="5000" step="500"
+                  value={updateInterval}
+                  onChange={(e) => setUpdateInterval(Number(e.target.value))}
+                  className="w-full"
+                />
               </div>
+            </div>
 
-              {/*stats*/}
-              <div className="bg-gray-900 p-3 rounded border border-gray-700 space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Active Satellites</span>
-                  <span className="text-white font-medium">{Object.keys(positions).length} / {satellites.length}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Update Rate</span>
-                  <span className="text-white font-medium">{updateInterval}ms</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Worker Thread</span>
-                  <span className="text-green-400 font-medium">Active</span>
-                </div>
-              </div>
+            {/* Tracking toggle */}
+            <button
+              onClick={() => setIsTracking(!isTracking)}
+              className="w-full py-2 rounded-lg text-[11px] font-medium transition-colors"
+              style={{
+                background: isTracking ? 'rgba(56, 243, 191, 0.1)' : 'rgba(244, 63, 94, 0.1)',
+                border: `1px solid ${isTracking ? 'rgba(56, 243, 191, 0.25)' : 'rgba(244, 63, 94, 0.25)'}`,
+                color: isTracking ? 'var(--accent)' : 'var(--danger)',
+              }}
+            >
+              {isTracking ? 'TRACKING ACTIVE' : 'TRACKING PAUSED'}
+            </button>
 
-              {/*tech stack info*/}
-              <div className="bg-gray-900 p-3 rounded border border-gray-700 space-y-2">
-                <div className="text-gray-400 font-medium mb-2">Technical Details</div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Coordinate System</span>
-                  <span className="text-white text-right">ECI → Geodetic → 3D</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Propagation Model</span>
-                  <span className="text-white">SGP4</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Library</span>
-                  <span className="text-white">satellite.js</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">3D Rendering</span>
-                  <span className="text-blue-400">Three.js + R3F</span>
-                </div>
-              </div>
-
-              {/*categories*/}
-              <div className="bg-gray-900 p-3 rounded border border-gray-700">
-                <h3 className="font-semibold mb-2 text-sm">Categories</h3>
-                <div className="space-y-2">
-                  {['station', 'starlink', 'weather', 'communication', 'navigation', 'other'].map(cat => (
-                    <div key={cat} className="flex items-center gap-2">
-                      <div
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: getCategoryColor(cat) }}
-                      />
-                      <span className="capitalize">{cat}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/*display options*/}
-              {selectedSatellite && (
-                <div className="bg-gray-900 p-3 rounded border border-gray-700 space-y-2">
-                  <div className="text-gray-400 font-medium mb-2">Display Options</div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-400">Ground Track</span>
-                    <span className={`font-medium ${showGroundTrack ? 'text-green-400' : 'text-gray-500'}`}>
-                      {showGroundTrack ? 'On' : 'Off'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-400">Visibility Circle</span>
-                    <span className={`font-medium ${showVisibilityCircle ? 'text-green-400' : 'text-gray-500'}`}>
-                      {showVisibilityCircle ? 'On' : 'Off'}
-                    </span>
-                  </div>
-                </div>
-              )}
-                </div>
-              </>
+            {/* Auth button */}
+            {isAuthenticated && (
+              <button
+                onClick={() => setShowAuthDialog(true)}
+                className="w-full py-2 rounded-lg text-[11px] flex items-center justify-center gap-2 transition-colors hover:bg-white/[0.03]"
+                style={{ border: '1px solid var(--glass-border)', color: 'var(--text-tertiary)' }}
+              >
+                <Key size={12} /> Change Login
+              </button>
             )}
           </div>
         </div>
+      )}
+
+      {/* ═══ SELECTED SATELLITE INFO CARD ═══ */}
+      {selectedSatellite && positions[selectedSatellite.id] && (
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 glass-solid rounded-xl info-card-glow fade-in" style={{ minWidth: '420px', maxWidth: '520px' }}>
+          <div className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-2.5 h-2.5 rounded-full" style={{
+                  backgroundColor: getCategoryColor(selectedSatellite.category),
+                  boxShadow: `0 0 10px ${getCategoryColor(selectedSatellite.category)}`,
+                }} />
+                <h3 className="text-sm font-bold tracking-wide" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>
+                  {selectedSatellite.name}
+                </h3>
+                <span className="text-[9px] px-1.5 py-0.5 rounded uppercase tracking-wider" style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-tertiary)' }}>
+                  {getOrbitType(positions[selectedSatellite.id].altitude)}
+                </span>
+              </div>
+              <button onClick={() => setSelectedSatellite(null)} className="hover:opacity-70 transition-opacity">
+                <X size={14} style={{ color: 'var(--text-tertiary)' }} />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-4 gap-4 text-center" style={{ fontVariantNumeric: 'tabular-nums' }}>
+              {[
+                ['LAT', `${positions[selectedSatellite.id].latitude.toFixed(2)}°`],
+                ['LON', `${positions[selectedSatellite.id].longitude.toFixed(2)}°`],
+                ['ALT', `${positions[selectedSatellite.id].altitude.toFixed(0)} km`],
+                ...(visibility ? [['EL', <span key="el" style={{ color: visibility.isVisible ? 'var(--accent)' : 'var(--danger)' }}>{visibility.elevation.toFixed(1)}°</span>]] : [['EL', '---']]),
+              ].map(([label, val]) => (
+                <div key={label}>
+                  <div className="text-[9px] uppercase tracking-widest mb-1" style={{ color: 'var(--text-tertiary)' }}>{label}</div>
+                  <div className="text-xs font-semibold" style={{ color: typeof val === 'string' ? 'var(--text-primary)' : undefined }}>{val}</div>
+                </div>
+              ))}
+            </div>
+
+            {upcomingPasses.length > 0 && (
+              <div className="mt-3 pt-2.5 flex items-center gap-2" style={{ borderTop: '1px solid var(--glass-border)' }}>
+                <Clock size={11} style={{ color: 'var(--text-tertiary)' }} />
+                <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+                  Next pass in {Math.round((upcomingPasses[0].startTime - new Date()) / 60000)} min
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ═══ BOTTOM-LEFT CONTROLS HINT ═══ */}
+      <div className="absolute bottom-5 left-5 z-20 text-[9px] space-y-0.5" style={{ color: 'var(--text-tertiary)' }}>
+        <div>Drag to rotate</div>
+        <div>Scroll to zoom</div>
+        <div>Right-drag to pan</div>
       </div>
 
-      {/*perf monitor*/}
+      {/* ═══ BOTTOM-RIGHT STATUS ═══ */}
+      <div className="absolute bottom-5 right-5 z-20 flex items-center gap-3 text-[9px]" style={{ color: 'var(--text-tertiary)' }}>
+        <span>SGP4</span>
+        <span>Three.js + R3F</span>
+        <span className="flex items-center gap-1">
+          <div className="w-1 h-1 rounded-full" style={{ background: isAuthenticated ? 'var(--accent)' : 'var(--warn)' }} />
+          {isAuthenticated ? 'LIVE' : 'OFFLINE'}
+        </span>
+      </div>
+
+      {/* ═══ AUTH DIALOG ═══ */}
+      {showAuthDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)' }}>
+          <div className="glass-solid rounded-2xl p-6 max-w-sm w-full mx-4 fade-in info-card-glow">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(56, 243, 191, 0.1)', border: '1px solid rgba(56, 243, 191, 0.2)' }}>
+                <Key size={18} style={{ color: 'var(--accent)' }} />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>Space-Track Login</h2>
+                <p className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>Access real satellite data</p>
+              </div>
+            </div>
+
+            {error && (
+              <div className="px-3 py-2 rounded-lg mb-4 text-[11px]" style={{ background: 'rgba(244, 63, 94, 0.08)', border: '1px solid rgba(244, 63, 94, 0.2)', color: 'var(--danger)' }}>
+                {error}
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-[10px] uppercase tracking-wider mb-1.5 block" style={{ color: 'var(--text-tertiary)' }}>Username</label>
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-lg text-xs outline-none transition-colors"
+                  style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--glass-border)', color: 'var(--text-primary)' }}
+                  placeholder="your@email.com"
+                  disabled={isLoading}
+                />
+              </div>
+              <div>
+                <label className="text-[10px] uppercase tracking-wider mb-1.5 block" style={{ color: 'var(--text-tertiary)' }}>Password</label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-lg text-xs outline-none transition-colors"
+                  style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--glass-border)', color: 'var(--text-primary)' }}
+                  placeholder="Enter password"
+                  disabled={isLoading}
+                  onKeyPress={(e) => e.key === 'Enter' && handleAuthentication()}
+                />
+              </div>
+              <button
+                onClick={handleAuthentication}
+                disabled={isLoading || !username || !password}
+                className="w-full py-2.5 rounded-lg text-xs font-medium flex items-center justify-center gap-2 transition-all disabled:opacity-30"
+                style={{ background: 'var(--accent)', color: '#000' }}
+              >
+                {isLoading ? (
+                  <><RefreshCw size={13} className="animate-spin" /> Authenticating...</>
+                ) : (
+                  <><Key size={13} /> Sign In</>
+                )}
+              </button>
+            </div>
+
+            <p className="text-[9px] mt-4 leading-relaxed" style={{ color: 'var(--text-tertiary)' }}>
+              No account? <a href="https://www.space-track.org/auth/createAccount" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)' }}>Create one free</a>
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ LOCATION PROMPT ═══ */}
+      {showLocationPrompt && !showAuthDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)' }}>
+          <div className="glass-solid rounded-2xl p-6 max-w-sm w-full mx-4 fade-in info-card-glow">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(56, 243, 191, 0.1)', border: '1px solid rgba(56, 243, 191, 0.2)' }}>
+                <MapPin size={18} style={{ color: 'var(--accent)' }} />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>Your Location</h2>
+                <p className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>Enable pass predictions</p>
+              </div>
+            </div>
+
+            <div className="p-3 rounded-lg mb-4 text-[10px] space-y-1" style={{ background: 'rgba(56, 243, 191, 0.04)', border: '1px solid rgba(56, 243, 191, 0.1)', color: 'var(--text-secondary)' }}>
+              <p>Used for:</p>
+              <ul className="space-y-0.5 ml-2" style={{ color: 'var(--text-tertiary)' }}>
+                <li>Pass predictions over your location</li>
+                <li>Elevation/azimuth for viewing</li>
+                <li>Observer marker on the globe</li>
+              </ul>
+            </div>
+
+            <div className="space-y-2">
+              <button
+                onClick={getUserLocation}
+                disabled={gettingLocation}
+                className="w-full py-2.5 rounded-lg text-xs font-medium flex items-center justify-center gap-2 transition-all disabled:opacity-30"
+                style={{ background: 'var(--accent)', color: '#000' }}
+              >
+                {gettingLocation ? (
+                  <><RefreshCw size={13} className="animate-spin" /> Getting Location...</>
+                ) : (
+                  <><MapPin size={13} /> Share My Location</>
+                )}
+              </button>
+              <button
+                onClick={skipLocationSetup}
+                disabled={gettingLocation}
+                className="w-full py-2 rounded-lg text-[11px] transition-colors hover:bg-white/[0.03]"
+                style={{ border: '1px solid var(--glass-border)', color: 'var(--text-tertiary)' }}
+              >
+                Skip for now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ PERFORMANCE MONITOR ═══ */}
       <PerformanceMonitor isVisible={showPerformanceMonitor} />
     </div>
   );
