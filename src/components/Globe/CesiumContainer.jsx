@@ -48,7 +48,17 @@ export default function CesiumContainer() {
         shouldAnimate: true,
       });
 
-      // Dark globe appearance — base color is landmass (lighter blue)
+      // Dark map tile layer (CartoDB Dark Matter — roads, cities, labels)
+      const darkTiles = new Cesium.UrlTemplateImageryProvider({
+        url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+        subdomains: ['a', 'b', 'c', 'd'],
+        credit: new Cesium.Credit('CartoDB'),
+        minimumLevel: 0,
+        maximumLevel: 18,
+      });
+      viewer.imageryLayers.addImageryProvider(darkTiles);
+
+      // Globe appearance
       viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString(GLOBE_BASE_COLOR);
       viewer.scene.globe.enableLighting = true;
       viewer.scene.backgroundColor = Cesium.Color.BLACK;
