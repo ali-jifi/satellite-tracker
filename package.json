@@ -10,14 +10,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@react-three/drei": "^10.7.6",
-    "@react-three/fiber": "^9.4.0",
     "cesium": "^1.140.0",
     "lucide-react": "^0.546.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "satellite.js": "^6.0.1",
-    "three": "^0.180.0",
     "zustand": "^5.0.12"
   },
   "devDependencies": {
