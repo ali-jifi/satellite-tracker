@@ -1,8 +1,8 @@
 import './App.css'
-import SatelliteTracker from './components/SatelliteTracker'
+import CesiumContainer from './components/Globe/CesiumContainer'
 
 function App() {
-  return <SatelliteTracker />
+  return <CesiumContainer />
 }
 
 export default App
