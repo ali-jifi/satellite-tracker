@@ -20,9 +20,11 @@ export default function CesiumContainer() {
   const containerRef = useRef(null);
   const initialized = useRef(false);
   const viewerInstance = useRef(null);
+  const gridLayerRef = useRef(null);
   const setViewerRef = useAppStore((s) => s.setViewerRef);
   const setLoading = useAppStore((s) => s.setLoading);
   const observerLocation = useAppStore((s) => s.observerLocation);
+  const gridLinesVisible = useAppStore((s) => s.gridLinesVisible);
 
   useEffect(() => {
     // Guard against React Strict Mode double-mount
@@ -68,6 +70,18 @@ export default function CesiumContainer() {
       viewer.scene.screenSpaceCameraController.minimumZoomDistance = MIN_ZOOM_DISTANCE;
       viewer.scene.screenSpaceCameraController.maximumZoomDistance = MAX_ZOOM_DISTANCE;
 
+      // Grid lines layer (hidden by default)
+      const gridProvider = new Cesium.GridImageryProvider({
+        cells: 8,
+        color: Cesium.Color.fromCssColorString('rgba(255, 255, 255, 0.08)'),
+        glowColor: Cesium.Color.fromCssColorString('rgba(255, 255, 255, 0.02)'),
+        glowWidth: 2,
+        backgroundColor: Cesium.Color.TRANSPARENT,
+      });
+      const gridLayer = viewer.imageryLayers.addImageryProvider(gridProvider);
+      gridLayer.show = false;
+      gridLayerRef.current = gridLayer;
+
       // Set initial camera to deep space (reveal start)
       viewer.camera.setView({
         destination: Cesium.Cartesian3.fromDegrees(
@@ -82,36 +96,41 @@ export default function CesiumContainer() {
         },
       });
 
-      // Load land polygons (filled lighter blue to distinguish from ocean)
+      // Load land polygons (lighter blue to distinguish from ocean)
       const land = await Cesium.GeoJsonDataSource.load(
         '/data/ne_110m_land.geojson',
         {
           fill: Cesium.Color.fromCssColorString(LANDMASS_COLOR),
           stroke: Cesium.Color.TRANSPARENT,
           strokeWidth: 0,
-          clampToGround: true,
         }
       );
+      // Set land polygons to render on terrain surface
+      const landEntities = land.entities.values;
+      for (const entity of landEntities) {
+        if (entity.polygon) {
+          entity.polygon.heightReference = Cesium.HeightReference.CLAMP_TO_GROUND;
+          entity.polygon.classificationType = Cesium.ClassificationType.TERRAIN;
+        }
+      }
       viewer.dataSources.add(land);
 
-      // Load GeoJSON coastlines
+      // Load GeoJSON coastlines (render above land as non-clamped lines)
       const coastlines = await Cesium.GeoJsonDataSource.load(
         '/data/ne_110m_coastline.geojson',
         {
           stroke: Cesium.Color.fromCssColorString(COASTLINE_COLOR),
           strokeWidth: COASTLINE_WIDTH,
-          clampToGround: true,
         }
       );
       viewer.dataSources.add(coastlines);
 
-      // Load GeoJSON country borders
+      // Load GeoJSON country borders (render above land as non-clamped lines)
       const borders = await Cesium.GeoJsonDataSource.load(
         '/data/ne_110m_admin_0_boundary_lines_land.geojson',
         {
           stroke: Cesium.Color.fromCssColorString(COASTLINE_COLOR),
           strokeWidth: COASTLINE_WIDTH,
-          clampToGround: true,
         }
       );
       viewer.dataSources.add(borders);
@@ -170,25 +189,31 @@ export default function CesiumContainer() {
       },
     });
 
-    // Concentric visibility circles
-    [200_000, 500_000, 1_000_000].forEach((radius, i) => {
+    // Concentric visibility circles using polyline circles
+    const accentColor = Cesium.Color.fromCssColorString('#38f3bf');
+    const circleRadii = [200_000, 500_000, 1_000_000]; // meters
+    circleRadii.forEach((radius, i) => {
+      const circlePoints = [];
+      const numSegments = 64;
+      for (let s = 0; s <= numSegments; s++) {
+        const angle = (s / numSegments) * Math.PI * 2;
+        // Approximate circle on globe surface using offset degrees
+        const dLat = (radius / 111320) * Math.cos(angle);
+        const dLon = (radius / (111320 * Math.cos(observerLocation.lat * Math.PI / 180))) * Math.sin(angle);
+        circlePoints.push(observerLocation.lon + dLon, observerLocation.lat + dLat);
+      }
       viewer.entities.add({
         id: `observer-ring-${i}`,
-        position,
-        ellipse: {
-          semiMajorAxis: radius,
-          semiMinorAxis: radius,
-          fill: false,
-          outline: true,
-          outlineColor: Cesium.Color.fromCssColorString('#38f3bf').withAlpha(0.4 - i * 0.1),
-          outlineWidth: 1,
+        polyline: {
+          positions: Cesium.Cartesian3.fromDegreesArray(circlePoints),
+          width: 1.5,
+          material: accentColor.withAlpha(0.4 - i * 0.1),
         },
       });
     });
 
     // Crosshair lines through observer (N-S and E-W)
     const crosshairExtent = 12; // degrees from center
-    const crosshairAlpha = 0.25;
     viewer.entities.add({
       id: 'observer-crosshair-ns',
       polyline: {
@@ -197,8 +222,7 @@ export default function CesiumContainer() {
           observerLocation.lon, observerLocation.lat + crosshairExtent,
         ]),
         width: 1,
-        material: Cesium.Color.fromCssColorString('#38f3bf').withAlpha(crosshairAlpha),
-        clampToGround: true,
+        material: accentColor.withAlpha(0.25),
       },
     });
     viewer.entities.add({
@@ -209,8 +233,7 @@ export default function CesiumContainer() {
           observerLocation.lon + crosshairExtent, observerLocation.lat,
         ]),
         width: 1,
-        material: Cesium.Color.fromCssColorString('#38f3bf').withAlpha(crosshairAlpha),
-        clampToGround: true,
+        material: accentColor.withAlpha(0.25),
       },
     });
 
@@ -224,6 +247,13 @@ export default function CesiumContainer() {
       duration: 1.5,
     });
   }, [observerLocation]);
+
+  // Grid lines toggle reactivity
+  useEffect(() => {
+    if (gridLayerRef.current) {
+      gridLayerRef.current.show = gridLinesVisible;
+    }
+  }, [gridLinesVisible]);
 
   return (
     <div ref={containerRef} style={{ position: 'absolute', inset: 0 }} />

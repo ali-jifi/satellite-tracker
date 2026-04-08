@@ -25,13 +25,7 @@ const useAppStore = create((set, get) => ({
 
   // Globe settings
   gridLinesVisible: false,
-  toggleGridLines: () => {
-    const { viewerRef, gridLinesVisible } = get();
-    if (!viewerRef) return;
-    const newVal = !gridLinesVisible;
-    set({ gridLinesVisible: newVal });
-    // Grid layer toggling will be implemented when grid layer is added
-  },
+  toggleGridLines: () => set((s) => ({ gridLinesVisible: !s.gridLinesVisible })),
 }));
 
 export default useAppStore;
