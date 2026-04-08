@@ -4,8 +4,6 @@ import 'cesium/Build/Cesium/Widgets/widgets.css';
 
 import {
   GLOBE_BASE_COLOR,
-  COASTLINE_COLOR,
-  COASTLINE_WIDTH,
   BLOOM_CONFIG,
   DEFAULT_CAMERA,
   REVEAL_START,
@@ -104,26 +102,6 @@ export default function CesiumContainer() {
           roll: 0,
         },
       });
-
-      // Load GeoJSON coastlines
-      const coastlines = await Cesium.GeoJsonDataSource.load(
-        '/data/ne_110m_coastline.geojson',
-        {
-          stroke: Cesium.Color.fromCssColorString(COASTLINE_COLOR),
-          strokeWidth: COASTLINE_WIDTH,
-        }
-      );
-      viewer.dataSources.add(coastlines);
-
-      // Load GeoJSON country borders
-      const borders = await Cesium.GeoJsonDataSource.load(
-        '/data/ne_110m_admin_0_boundary_lines_land.geojson',
-        {
-          stroke: Cesium.Color.fromCssColorString(COASTLINE_COLOR),
-          strokeWidth: COASTLINE_WIDTH,
-        }
-      );
-      viewer.dataSources.add(borders);
 
       // Store viewer ref locally and in zustand
       viewerInstance.current = viewer;

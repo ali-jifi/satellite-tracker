@@ -1,11 +1,7 @@
 // Globe base color doubles as landmass — lighter blue so land is visible
 export const GLOBE_BASE_COLOR = '#131b2e';
 
-// Coastline/border style (dimmed for subtlety)
-export const COASTLINE_COLOR = 'rgba(180, 195, 215, 0.55)';
-export const COASTLINE_WIDTH = 1.2;
-
-// Bloom settings for coastline glow
+// Bloom settings for tile glow
 export const BLOOM_CONFIG = {
   enabled: true,
   contrast: 119,
