@@ -32,6 +32,12 @@ const useAppStore = create((set, get) => ({
   toggleDebrisVisible: () => set((s) => ({ debrisVisible: !s.debrisVisible })),
   labelsVisible: true,
   toggleLabelsVisible: () => set((s) => ({ labelsVisible: !s.labelsVisible })),
+
+  // Space-Track credentials
+  spaceTrackCredentials: null,
+  setSpaceTrackCredentials: (creds) => set({ spaceTrackCredentials: creds }),
+  spaceTrackEnabled: false,
+  setSpaceTrackEnabled: (enabled) => set({ spaceTrackEnabled: enabled }),
 }));
 
 export default useAppStore;
