@@ -13,10 +13,13 @@ import {
   MIN_ZOOM_DISTANCE,
   MAX_ZOOM_DISTANCE,
 } from './GlobeConfig';
+import useAppStore from '../../stores/appStore';
 
 export default function CesiumContainer() {
   const containerRef = useRef(null);
   const initialized = useRef(false);
+  const setViewerRef = useAppStore((s) => s.setViewerRef);
+  const setLoading = useAppStore((s) => s.setLoading);
 
   useEffect(() => {
     // Guard against React Strict Mode double-mount
@@ -98,6 +101,9 @@ export default function CesiumContainer() {
       );
       viewer.dataSources.add(borders);
 
+      // Store viewer ref in zustand
+      setViewerRef(viewer);
+
       // Zoom-in reveal animation
       viewer.camera.flyTo({
         destination: Cesium.Cartesian3.fromDegrees(
@@ -107,6 +113,7 @@ export default function CesiumContainer() {
         ),
         duration: REVEAL_DURATION,
         easingFunction: Cesium.EasingFunction.CUBIC_IN_OUT,
+        complete: () => setLoading(false),
       });
     }
 
@@ -114,6 +121,7 @@ export default function CesiumContainer() {
 
     return () => {
       if (viewer && !viewer.isDestroyed()) {
+        setViewerRef(null);
         viewer.destroy();
       }
       initialized.current = false;
