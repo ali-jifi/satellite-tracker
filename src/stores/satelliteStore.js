@@ -99,6 +99,13 @@ const useSatelliteStore = create((set, get) => ({
 
   setColorMode: (mode) => set({ colorMode: mode }),
 
+  // === Position buffer (from propagation worker) ===
+  positionBuffer: null,
+  positionCount: 0,
+
+  setPositionBuffer: (buffer, count) =>
+    set({ positionBuffer: buffer, positionCount: count }),
+
   // === Category and country indexes ===
   categoryIndex: new Map(),
   countryIndex: new Map(),
