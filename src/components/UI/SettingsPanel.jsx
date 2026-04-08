@@ -27,6 +27,10 @@ export default function SettingsPanel() {
   const settingsOpen = useAppStore((s) => s.settingsOpen);
   const gridLinesVisible = useAppStore((s) => s.gridLinesVisible);
   const toggleGridLines = useAppStore((s) => s.toggleGridLines);
+  const labelsVisible = useAppStore((s) => s.labelsVisible);
+  const toggleLabelsVisible = useAppStore((s) => s.toggleLabelsVisible);
+  const debrisVisible = useAppStore((s) => s.debrisVisible);
+  const toggleDebrisVisible = useAppStore((s) => s.toggleDebrisVisible);
 
   if (!settingsOpen) return null;
 
@@ -51,6 +55,22 @@ export default function SettingsPanel() {
             Grid Lines
           </span>
           <ToggleSwitch enabled={gridLinesVisible} onToggle={toggleGridLines} />
+        </div>
+
+        {/* Satellite Labels */}
+        <div className="flex items-center justify-between">
+          <span className="text-xs" style={{ color: 'var(--text-primary)' }}>
+            Satellite Labels
+          </span>
+          <ToggleSwitch enabled={labelsVisible} onToggle={toggleLabelsVisible} />
+        </div>
+
+        {/* Show Debris */}
+        <div className="flex items-center justify-between">
+          <span className="text-xs" style={{ color: 'var(--text-primary)' }}>
+            Show Debris
+          </span>
+          <ToggleSwitch enabled={debrisVisible} onToggle={toggleDebrisVisible} />
         </div>
 
         {/* Atmosphere - placeholder */}

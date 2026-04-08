@@ -26,6 +26,12 @@ const useAppStore = create((set, get) => ({
   // Globe settings
   gridLinesVisible: false,
   toggleGridLines: () => set((s) => ({ gridLinesVisible: !s.gridLinesVisible })),
+
+  // Visibility toggles
+  debrisVisible: true,
+  toggleDebrisVisible: () => set((s) => ({ debrisVisible: !s.debrisVisible })),
+  labelsVisible: true,
+  toggleLabelsVisible: () => set((s) => ({ labelsVisible: !s.labelsVisible })),
 }));
 
 export default useAppStore;
