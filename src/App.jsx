@@ -1,4 +1,6 @@
 import CesiumContainer from './components/Globe/CesiumContainer';
+import SatelliteRenderer from './components/Globe/SatelliteRenderer';
+import SelectedSatelliteManager from './components/Globe/SelectedSatelliteManager';
 import TopBar from './components/UI/TopBar';
 import MenuDrawer from './components/UI/MenuDrawer';
 import SettingsPanel from './components/UI/SettingsPanel';
@@ -30,6 +32,8 @@ function App() {
       <TopBar />
       {!isLoading && (
         <>
+          <SatelliteRenderer />
+          <SelectedSatelliteManager />
           <MenuDrawer />
           <SettingsPanel />
           <ObserverLocation />

@@ -12,6 +12,9 @@ import {
   MAX_ZOOM_DISTANCE,
 } from './GlobeConfig';
 import useAppStore from '../../stores/appStore';
+import useSatelliteStore from '../../stores/satelliteStore';
+import { fetchAllSatellites, startBackgroundPolling } from '../../services/celestrakService';
+import { startPropagation, stopPropagation, refreshWorkerData } from '../../services/propagationService';
 
 export default function CesiumContainer() {
   const containerRef = useRef(null);
@@ -120,9 +123,32 @@ export default function CesiumContainer() {
       });
     }
 
-    initViewer();
+    let stopPolling = null;
+
+    initViewer().then(() => {
+      // Bootstrap data pipeline: fetch catalog -> start propagation -> poll
+      fetchAllSatellites((count) => {
+        useSatelliteStore.getState().setLoadProgress(count);
+      }).then((catalog) => {
+        const satArray = Array.from(catalog.values());
+        useSatelliteStore.getState().addSatellites(satArray);
+        useSatelliteStore.getState().setCatalogLoaded(true);
+        console.log(`[CesiumContainer] Catalog loaded: ${catalog.size} satellites`);
+
+        startPropagation();
+
+        stopPolling = startBackgroundPolling(async () => {
+          const refreshed = await fetchAllSatellites();
+          const refreshArray = Array.from(refreshed.values());
+          useSatelliteStore.getState().addSatellites(refreshArray);
+          refreshWorkerData();
+        });
+      });
+    });
 
     return () => {
+      stopPropagation();
+      if (stopPolling) stopPolling();
       if (viewer && !viewer.isDestroyed()) {
         setViewerRef(null);
         viewerInstance.current = null;
