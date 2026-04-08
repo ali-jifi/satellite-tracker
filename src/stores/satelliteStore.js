@@ -1,6 +1,8 @@
 import { create } from 'zustand';
+import Fuse from 'fuse.js';
 
 const MAX_SELECTED = 20;
+const MAX_SEARCH_RESULTS = 50;
 
 const useSatelliteStore = create((set, get) => ({
   // === Catalog state ===
@@ -9,6 +11,44 @@ const useSatelliteStore = create((set, get) => ({
   catalogLoaded: false,
   loadProgress: 0,
   lastFetchTime: null,
+
+  // === Search state ===
+  searchQuery: '',
+  searchResults: [],
+  fuseInstance: null,
+
+  initFuse: () => {
+    const arr = get().satelliteArray;
+    // Build search list with id as string so Fuse can match NORAD IDs
+    const searchList = arr.map((sat) => ({
+      ...sat,
+      idStr: String(sat.id),
+    }));
+    const fuse = new Fuse(searchList, {
+      keys: ['name', 'idStr'],
+      threshold: 0.3,
+      distance: 100,
+      includeScore: true,
+    });
+    set({ fuseInstance: fuse });
+  },
+
+  setSearchQuery: (query) => {
+    const fuse = get().fuseInstance;
+    if (!query.trim()) {
+      set({ searchQuery: query, searchResults: [] });
+      return;
+    }
+    if (!fuse) {
+      set({ searchQuery: query, searchResults: [] });
+      return;
+    }
+    const results = fuse.search(query, { limit: MAX_SEARCH_RESULTS });
+    set({
+      searchQuery: query,
+      searchResults: results.map((r) => r.item),
+    });
+  },
 
   // === Catalog actions ===
   addSatellites: (satArray) =>
