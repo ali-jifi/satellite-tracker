@@ -1,9 +1,12 @@
 // Dark navy ocean color (barely perceptible against black space)
 export const DARK_OCEAN_COLOR = '#0a0e1a';
 
-// Coastline/border style
-export const COASTLINE_COLOR = 'rgba(220, 230, 245, 0.9)';
-export const COASTLINE_WIDTH = 1.5;
+// Coastline/border style (dimmed for subtlety)
+export const COASTLINE_COLOR = 'rgba(180, 195, 215, 0.55)';
+export const COASTLINE_WIDTH = 1.2;
+
+// Landmass fill color (lighter blue to distinguish from dark navy oceans)
+export const LANDMASS_COLOR = '#131b2e';
 
 // Bloom settings for coastline glow
 export const BLOOM_CONFIG = {

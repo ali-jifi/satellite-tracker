@@ -4,6 +4,7 @@ import 'cesium/Build/Cesium/Widgets/widgets.css';
 
 import {
   DARK_OCEAN_COLOR,
+  LANDMASS_COLOR,
   COASTLINE_COLOR,
   COASTLINE_WIDTH,
   BLOOM_CONFIG,
@@ -81,6 +82,18 @@ export default function CesiumContainer() {
         },
       });
 
+      // Load land polygons (filled lighter blue to distinguish from ocean)
+      const land = await Cesium.GeoJsonDataSource.load(
+        '/data/ne_110m_land.geojson',
+        {
+          fill: Cesium.Color.fromCssColorString(LANDMASS_COLOR),
+          stroke: Cesium.Color.TRANSPARENT,
+          strokeWidth: 0,
+          clampToGround: true,
+        }
+      );
+      viewer.dataSources.add(land);
+
       // Load GeoJSON coastlines
       const coastlines = await Cesium.GeoJsonDataSource.load(
         '/data/ne_110m_coastline.geojson',
@@ -138,7 +151,7 @@ export default function CesiumContainer() {
     const viewer = viewerInstance.current;
 
     // Remove previous observer entities
-    ['observer-dot', 'observer-ring-0', 'observer-ring-1', 'observer-ring-2'].forEach((id) => {
+    ['observer-dot', 'observer-ring-0', 'observer-ring-1', 'observer-ring-2', 'observer-crosshair-ns', 'observer-crosshair-ew'].forEach((id) => {
       const existing = viewer.entities.getById(id);
       if (existing) viewer.entities.remove(existing);
     });
@@ -171,6 +184,34 @@ export default function CesiumContainer() {
           outlineWidth: 1,
         },
       });
+    });
+
+    // Crosshair lines through observer (N-S and E-W)
+    const crosshairExtent = 12; // degrees from center
+    const crosshairAlpha = 0.25;
+    viewer.entities.add({
+      id: 'observer-crosshair-ns',
+      polyline: {
+        positions: Cesium.Cartesian3.fromDegreesArray([
+          observerLocation.lon, observerLocation.lat - crosshairExtent,
+          observerLocation.lon, observerLocation.lat + crosshairExtent,
+        ]),
+        width: 1,
+        material: Cesium.Color.fromCssColorString('#38f3bf').withAlpha(crosshairAlpha),
+        clampToGround: true,
+      },
+    });
+    viewer.entities.add({
+      id: 'observer-crosshair-ew',
+      polyline: {
+        positions: Cesium.Cartesian3.fromDegreesArray([
+          observerLocation.lon - crosshairExtent, observerLocation.lat,
+          observerLocation.lon + crosshairExtent, observerLocation.lat,
+        ]),
+        width: 1,
+        material: Cesium.Color.fromCssColorString('#38f3bf').withAlpha(crosshairAlpha),
+        clampToGround: true,
+      },
     });
 
     // Fly to observer at ~2000km altitude
