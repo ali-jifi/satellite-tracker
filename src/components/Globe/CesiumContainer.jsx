@@ -15,6 +15,32 @@ import useAppStore from '../../stores/appStore';
 import useSatelliteStore from '../../stores/satelliteStore';
 import { fetchAllSatellites, startBackgroundPolling } from '../../services/celestrakService';
 import { startPropagation, stopPropagation, refreshWorkerData } from '../../services/propagationService';
+import spaceTrackService from '../../services/spaceTrackService';
+
+/**
+ * Attempt to fetch supplementary data from Space-Track.
+ * Non-blocking: logs warning on failure, never throws.
+ */
+async function fetchSpaceTrackData() {
+  const { spaceTrackEnabled, spaceTrackCredentials } = useAppStore.getState();
+  if (!spaceTrackEnabled || !spaceTrackCredentials) return;
+
+  try {
+    spaceTrackService.setCredentials(
+      spaceTrackCredentials.identity,
+      spaceTrackCredentials.password
+    );
+    await spaceTrackService.login();
+    const satellites = await spaceTrackService.getAllActiveTLEs(500);
+    if (satellites.length > 0) {
+      useSatelliteStore.getState().addSatellites(satellites);
+      refreshWorkerData();
+      console.log(`[SpaceTrack] Merged ${satellites.length} supplementary satellites`);
+    }
+  } catch (err) {
+    console.warn('[SpaceTrack] Failed to fetch supplementary data:', err.message);
+  }
+}
 
 export default function CesiumContainer() {
   const containerRef = useRef(null);
@@ -135,6 +161,9 @@ export default function CesiumContainer() {
         useSatelliteStore.getState().setCatalogLoaded(true);
         console.log(`[CesiumContainer] Catalog loaded: ${catalog.size} satellites`);
 
+        // Supplementary Space-Track fetch (non-blocking)
+        fetchSpaceTrackData();
+
         startPropagation();
 
         stopPolling = startBackgroundPolling(async () => {
@@ -146,9 +175,18 @@ export default function CesiumContainer() {
       });
     });
 
+    // Subscribe to Space-Track credential changes for live activation
+    let prevSpaceTrackEnabled = useAppStore.getState().spaceTrackEnabled;
+    const unsubSpaceTrack = useAppStore.subscribe((state) => {
+      if (state.spaceTrackEnabled === prevSpaceTrackEnabled) return;
+      prevSpaceTrackEnabled = state.spaceTrackEnabled;
+      if (state.spaceTrackEnabled) fetchSpaceTrackData();
+    });
+
     return () => {
       stopPropagation();
       if (stopPolling) stopPolling();
+      unsubSpaceTrack();
       if (viewer && !viewer.isDestroyed()) {
         setViewerRef(null);
         viewerInstance.current = null;
