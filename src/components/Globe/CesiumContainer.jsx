@@ -3,8 +3,7 @@ import * as Cesium from 'cesium';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 
 import {
-  DARK_OCEAN_COLOR,
-  LANDMASS_COLOR,
+  GLOBE_BASE_COLOR,
   COASTLINE_COLOR,
   COASTLINE_WIDTH,
   BLOOM_CONFIG,
@@ -49,8 +48,8 @@ export default function CesiumContainer() {
         shouldAnimate: true,
       });
 
-      // Dark globe appearance
-      viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString(DARK_OCEAN_COLOR);
+      // Dark globe appearance — base color is landmass (lighter blue)
+      viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString(GLOBE_BASE_COLOR);
       viewer.scene.globe.enableLighting = true;
       viewer.scene.backgroundColor = Cesium.Color.BLACK;
       viewer.scene.skyAtmosphere.show = false;
@@ -96,26 +95,7 @@ export default function CesiumContainer() {
         },
       });
 
-      // Load land polygons (lighter blue to distinguish from ocean)
-      const land = await Cesium.GeoJsonDataSource.load(
-        '/data/ne_110m_land.geojson',
-        {
-          fill: Cesium.Color.fromCssColorString(LANDMASS_COLOR),
-          stroke: Cesium.Color.TRANSPARENT,
-          strokeWidth: 0,
-        }
-      );
-      // Set land polygons to render on terrain surface
-      const landEntities = land.entities.values;
-      for (const entity of landEntities) {
-        if (entity.polygon) {
-          entity.polygon.heightReference = Cesium.HeightReference.CLAMP_TO_GROUND;
-          entity.polygon.classificationType = Cesium.ClassificationType.TERRAIN;
-        }
-      }
-      viewer.dataSources.add(land);
-
-      // Load GeoJSON coastlines (render above land as non-clamped lines)
+      // Load GeoJSON coastlines
       const coastlines = await Cesium.GeoJsonDataSource.load(
         '/data/ne_110m_coastline.geojson',
         {
@@ -125,7 +105,7 @@ export default function CesiumContainer() {
       );
       viewer.dataSources.add(coastlines);
 
-      // Load GeoJSON country borders (render above land as non-clamped lines)
+      // Load GeoJSON country borders
       const borders = await Cesium.GeoJsonDataSource.load(
         '/data/ne_110m_admin_0_boundary_lines_land.geojson',
         {
