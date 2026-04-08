@@ -18,8 +18,10 @@ import useAppStore from '../../stores/appStore';
 export default function CesiumContainer() {
   const containerRef = useRef(null);
   const initialized = useRef(false);
+  const viewerInstance = useRef(null);
   const setViewerRef = useAppStore((s) => s.setViewerRef);
   const setLoading = useAppStore((s) => s.setLoading);
+  const observerLocation = useAppStore((s) => s.observerLocation);
 
   useEffect(() => {
     // Guard against React Strict Mode double-mount
@@ -101,7 +103,8 @@ export default function CesiumContainer() {
       );
       viewer.dataSources.add(borders);
 
-      // Store viewer ref in zustand
+      // Store viewer ref locally and in zustand
+      viewerInstance.current = viewer;
       setViewerRef(viewer);
 
       // Zoom-in reveal animation
@@ -122,11 +125,64 @@ export default function CesiumContainer() {
     return () => {
       if (viewer && !viewer.isDestroyed()) {
         setViewerRef(null);
+        viewerInstance.current = null;
         viewer.destroy();
       }
       initialized.current = false;
     };
   }, []);
+
+  // Observer marker and fly-to reactivity
+  useEffect(() => {
+    if (!viewerInstance.current || !observerLocation) return;
+    const viewer = viewerInstance.current;
+
+    // Remove previous observer entities
+    ['observer-dot', 'observer-ring-0', 'observer-ring-1', 'observer-ring-2'].forEach((id) => {
+      const existing = viewer.entities.getById(id);
+      if (existing) viewer.entities.remove(existing);
+    });
+
+    const position = Cesium.Cartesian3.fromDegrees(observerLocation.lon, observerLocation.lat);
+
+    // Center dot
+    viewer.entities.add({
+      id: 'observer-dot',
+      position,
+      point: {
+        pixelSize: 8,
+        color: Cesium.Color.fromCssColorString('#38f3bf'),
+        outlineColor: Cesium.Color.WHITE,
+        outlineWidth: 1,
+      },
+    });
+
+    // Concentric visibility circles
+    [200_000, 500_000, 1_000_000].forEach((radius, i) => {
+      viewer.entities.add({
+        id: `observer-ring-${i}`,
+        position,
+        ellipse: {
+          semiMajorAxis: radius,
+          semiMinorAxis: radius,
+          fill: false,
+          outline: true,
+          outlineColor: Cesium.Color.fromCssColorString('#38f3bf').withAlpha(0.4 - i * 0.1),
+          outlineWidth: 1,
+        },
+      });
+    });
+
+    // Fly to observer at ~2000km altitude
+    viewer.camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(
+        observerLocation.lon,
+        observerLocation.lat,
+        2_000_000
+      ),
+      duration: 1.5,
+    });
+  }, [observerLocation]);
 
   return (
     <div ref={containerRef} style={{ position: 'absolute', inset: 0 }} />

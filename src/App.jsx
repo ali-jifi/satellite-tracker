@@ -1,4 +1,8 @@
 import CesiumContainer from './components/Globe/CesiumContainer';
+import TopBar from './components/UI/TopBar';
+import MenuDrawer from './components/UI/MenuDrawer';
+import SettingsPanel from './components/UI/SettingsPanel';
+import ObserverLocation from './components/UI/ObserverLocation';
 import useAppStore from './stores/appStore';
 
 function LoadingScreen() {
@@ -23,7 +27,14 @@ function App() {
     <>
       <CesiumContainer />
       {isLoading && <LoadingScreen />}
-      {/* UI overlay components added in Plan 03 */}
+      <TopBar />
+      {!isLoading && (
+        <>
+          <MenuDrawer />
+          <SettingsPanel />
+          <ObserverLocation />
+        </>
+      )}
     </>
   );
 }
