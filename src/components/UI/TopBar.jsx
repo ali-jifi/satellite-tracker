@@ -1,10 +1,34 @@
 import { Menu, X, Settings } from 'lucide-react';
 import useAppStore from '../../stores/appStore';
+import useSatelliteStore from '../../stores/satelliteStore';
 
 export default function TopBar() {
   const menuOpen = useAppStore((s) => s.menuOpen);
   const toggleMenu = useAppStore((s) => s.toggleMenu);
   const toggleSettings = useAppStore((s) => s.toggleSettings);
+
+  const totalCount = useSatelliteStore((s) => s.satelliteArray.length);
+  const activeFilter = useSatelliteStore((s) => s.activeFilter);
+  const categoryIndex = useSatelliteStore((s) => s.categoryIndex);
+  const countryIndex = useSatelliteStore((s) => s.countryIndex);
+
+  // Calculate filtered count when a filter is active
+  let displayCount = null;
+  if (totalCount > 0) {
+    if (activeFilter) {
+      let filteredCount = 0;
+      if (activeFilter.type === 'category') {
+        const ids = categoryIndex.get(activeFilter.value);
+        filteredCount = ids ? ids.size : 0;
+      } else if (activeFilter.type === 'country') {
+        const ids = countryIndex.get(activeFilter.value);
+        filteredCount = ids ? ids.size : 0;
+      }
+      displayCount = `${filteredCount.toLocaleString()} / ${totalCount.toLocaleString()}`;
+    } else {
+      displayCount = totalCount.toLocaleString();
+    }
+  }
 
   return (
     <div className="fixed top-3 left-1/2 -translate-x-1/2 z-40 glass rounded-full px-2 py-1.5 flex items-center gap-4">
@@ -28,6 +52,16 @@ export default function TopBar() {
       >
         SATTRACKER
       </span>
+
+      {/* Satellite count */}
+      {displayCount && (
+        <span
+          className="text-[9px] tabular-nums select-none"
+          style={{ color: 'var(--text-secondary)' }}
+        >
+          {displayCount}
+        </span>
+      )}
 
       {/* Settings gear */}
       <button

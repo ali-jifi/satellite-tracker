@@ -87,8 +87,13 @@ const useSatelliteStore = create((set, get) => ({
       };
     }),
 
-  setCatalogLoaded: (loaded) =>
-    set({ catalogLoaded: loaded, lastFetchTime: loaded ? Date.now() : null }),
+  setCatalogLoaded: (loaded) => {
+    set({ catalogLoaded: loaded, lastFetchTime: loaded ? Date.now() : null });
+    if (loaded) {
+      // Initialize Fuse.js search index once catalog is ready
+      get().initFuse();
+    }
+  },
 
   setLoadProgress: (count) => set({ loadProgress: count }),
 
