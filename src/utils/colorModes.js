@@ -131,7 +131,7 @@ const DEFAULT_COUNTRY_RAW = { red: DEFAULT_COUNTRY_CESIUM.red, green: DEFAULT_CO
 /**
  * Check if satellite is debris based on objectType field.
  */
-function isDebris(satellite) {
+export function isDebris(satellite) {
   return satellite.objectType === 'DEBRIS' || satellite.objectType === 'DEB';
 }
 

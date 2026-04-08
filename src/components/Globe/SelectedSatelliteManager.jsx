@@ -18,6 +18,7 @@ export default function SelectedSatelliteManager() {
   const entitiesRef = useRef(new Map()); // noradId -> { point, orbit, label } entity ids
   const orbitIntervalRef = useRef(null);
   const unsubRef = useRef(null);
+  const unsubLabelsRef = useRef(null);
 
   useEffect(() => {
     const viewer = useAppStore.getState().viewerRef;
@@ -60,6 +61,20 @@ export default function SelectedSatelliteManager() {
       }
     });
 
+    // Label visibility reactivity
+    let prevLabelsVisible = useAppStore.getState().labelsVisible;
+    unsubLabelsRef.current = useAppStore.subscribe((state) => {
+      if (state.labelsVisible === prevLabelsVisible) return;
+      prevLabelsVisible = state.labelsVisible;
+
+      for (const entry of entitiesRef.current.values()) {
+        const entity = viewer.entities.getById(entry.pointEntityId);
+        if (entity && entity.label) {
+          entity.label.show = state.labelsVisible;
+        }
+      }
+    });
+
     // Periodic orbit recomputation
     orbitIntervalRef.current = setInterval(() => {
       for (const id of entitiesRef.current.keys()) {
@@ -69,6 +84,7 @@ export default function SelectedSatelliteManager() {
 
     return () => {
       if (unsubRef.current) unsubRef.current();
+      if (unsubLabelsRef.current) unsubLabelsRef.current();
       if (orbitIntervalRef.current) clearInterval(orbitIntervalRef.current);
 
       // Remove all entities
@@ -93,6 +109,7 @@ function addEntity(viewer, noradId, entityMap) {
 
   const colorMode = useSatelliteStore.getState().colorMode;
   const satColor = getColorForSatellite(sat, colorMode);
+  const labelsVisible = useAppStore.getState().labelsVisible;
 
   const pointEntityId = `sat-point-${noradId}`;
   const orbitEntityId = `sat-orbit-${noradId}`;
@@ -132,6 +149,7 @@ function addEntity(viewer, noradId, entityMap) {
       disableDepthTestDistance: Number.POSITIVE_INFINITY,
     },
     label: {
+      show: labelsVisible,
       text: sat.name || `NORAD ${noradId}`,
       font: '12px JetBrains Mono',
       fillColor: Cesium.Color.WHITE,

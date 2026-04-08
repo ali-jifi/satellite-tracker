@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import * as Cesium from 'cesium';
 import useAppStore from '../../stores/appStore';
 import useSatelliteStore from '../../stores/satelliteStore';
-import { getColorForSatelliteRaw } from '../../utils/colorModes';
+import { getColorForSatelliteRaw, isDebris } from '../../utils/colorModes';
 
 /**
  * SatelliteRenderer — renders 30k+ satellites as PointPrimitives.
@@ -21,6 +21,7 @@ export default function SatelliteRenderer() {
   const unsubFilterRef = useRef(null);
   const unsubColorRef = useRef(null);
   const unsubCatalogRef = useRef(null);
+  const unsubDebrisRef = useRef(null);
 
   useEffect(() => {
     const viewer = useAppStore.getState().viewerRef;
@@ -95,6 +96,8 @@ export default function SatelliteRenderer() {
       if (pointArr.length === 0) return;
 
       const selectedIds = useSatelliteStore.getState().selectedIds;
+      const debrisHidden = !useAppStore.getState().debrisVisible;
+      const satLookup = satLookupRef.current;
       const stride = 4;
 
       for (let i = 0; i < positionCount; i++) {
@@ -114,6 +117,15 @@ export default function SatelliteRenderer() {
         if (selectedIds.has(id)) {
           point.show = false;
           continue;
+        }
+
+        // Hide debris when debrisVisible is off
+        if (debrisHidden) {
+          const sat = satLookup.get(id);
+          if (sat && isDebris(sat)) {
+            point.show = false;
+            continue;
+          }
         }
 
         Cesium.Cartesian3.fromDegrees(lon, lat, alt * 1000, Cesium.Ellipsoid.WGS84, scratchCartesian);
@@ -185,6 +197,28 @@ export default function SatelliteRenderer() {
       }
     });
 
+    // Debris visibility reactivity — immediately hide/show debris points
+    let prevDebrisVisible = useAppStore.getState().debrisVisible;
+    unsubDebrisRef.current = useAppStore.subscribe((state) => {
+      if (state.debrisVisible === prevDebrisVisible) return;
+      prevDebrisVisible = state.debrisVisible;
+
+      const pointArr = pointArrayRef.current;
+      const satLookup = satLookupRef.current;
+      if (pointArr.length === 0) return;
+
+      const indexMap = pointIndexMapRef.current;
+      for (const [id, idx] of indexMap) {
+        const point = pointArr[idx];
+        const sat = satLookup.get(id);
+        if (!point || !sat) continue;
+
+        if (isDebris(sat)) {
+          point.show = state.debrisVisible;
+        }
+      }
+    });
+
     // Cleanup
     return () => {
       if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
@@ -199,6 +233,7 @@ export default function SatelliteRenderer() {
       if (unsubFilterRef.current) unsubFilterRef.current();
       if (unsubColorRef.current) unsubColorRef.current();
       if (unsubCatalogRef.current) unsubCatalogRef.current();
+      if (unsubDebrisRef.current) unsubDebrisRef.current();
     };
   }, []);
 
