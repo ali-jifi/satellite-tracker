@@ -11,6 +11,7 @@ import TimeWidget from './components/UI/TimeWidget';
 import DetailPanel from './components/UI/DetailPanel';
 import KeyboardShortcuts from './components/UI/KeyboardShortcuts';
 import ShortcutHelpOverlay from './components/UI/ShortcutHelpOverlay';
+import ToastContainer from './components/UI/ToastContainer';
 import useUrlSync from './hooks/useUrlSync';
 import useAppStore from './stores/appStore';
 
@@ -58,6 +59,7 @@ function App() {
         </>
       )}
       <ShortcutHelpOverlay />
+      <ToastContainer />
     </>
   );
 }
