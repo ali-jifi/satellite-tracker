@@ -63,6 +63,12 @@ const useAppStore = create((set, get) => ({
   },
   setSimDirection: (dir) => set({ simDirection: dir }),
 
+  // Camera mode state
+  cameraMode: 'free', // 'free' | 'follow' | 'pov' | 'skydome'
+  setCameraMode: (mode) => set({ cameraMode: mode }),
+  hudVisible: false,
+  toggleHud: () => set((s) => ({ hudVisible: !s.hudVisible })),
+
   // Space-Track credentials
   spaceTrackCredentials: null,
   setSpaceTrackCredentials: (creds) => set({ spaceTrackCredentials: creds }),
