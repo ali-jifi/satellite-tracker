@@ -50,7 +50,7 @@ function handleInit(data) {
 function handlePropagate(data) {
   const date = new Date(data.timestamp);
   const gmst = satellite.gstime(date);
-  const buffer = new Float64Array(satrecCache.size * 4);
+  const buffer = new Float64Array(satrecCache.size * 5);
   let validCount = 0;
 
   for (const [id, satrec] of satrecCache) {
@@ -62,12 +62,22 @@ function handlePropagate(data) {
       }
 
       const geo = satellite.eciToGeodetic(posVel.position, gmst);
-      const offset = validCount * 4;
+      const offset = validCount * 5;
 
       buffer[offset] = id;
       buffer[offset + 1] = satellite.degreesLat(geo.latitude);
       buffer[offset + 2] = satellite.degreesLong(geo.longitude);
       buffer[offset + 3] = geo.height;
+
+      // Velocity magnitude (km/s) from ECI velocity vector
+      if (posVel.velocity && typeof posVel.velocity === 'object') {
+        const vx = posVel.velocity.x;
+        const vy = posVel.velocity.y;
+        const vz = posVel.velocity.z;
+        buffer[offset + 4] = Math.sqrt(vx * vx + vy * vy + vz * vz);
+      } else {
+        buffer[offset + 4] = 0;
+      }
 
       validCount++;
     } catch {

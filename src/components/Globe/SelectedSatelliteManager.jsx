@@ -119,7 +119,7 @@ function addEntity(viewer, noradId, entityMap) {
     const { positionBuffer, positionCount } = useSatelliteStore.getState();
     if (!positionBuffer) return Cesium.Cartesian3.ZERO;
 
-    const stride = 4;
+    const stride = 5;
     for (let i = 0; i < positionCount; i++) {
       const offset = i * stride;
       if (positionBuffer[offset] === noradId) {

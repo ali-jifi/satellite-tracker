@@ -98,7 +98,7 @@ export default function SatelliteRenderer() {
       const selectedIds = useSatelliteStore.getState().selectedIds;
       const debrisHidden = !useAppStore.getState().debrisVisible;
       const satLookup = satLookupRef.current;
-      const stride = 4;
+      const stride = 5;
 
       for (let i = 0; i < positionCount; i++) {
         const offset = i * stride;

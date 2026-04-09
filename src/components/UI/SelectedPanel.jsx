@@ -4,7 +4,7 @@ import useSatelliteStore from '../../stores/satelliteStore';
 import { CATEGORY_COLORS } from '../../utils/colorModes.js';
 
 const MAX_SELECTED = 20;
-const STRIDE = 4;
+const STRIDE = 5;
 const ALTITUDE_REFRESH_MS = 2000;
 
 function useSelectedPositions() {
@@ -24,6 +24,7 @@ function useSelectedPositions() {
             lat: buf[offset + 1],
             lon: buf[offset + 2],
             alt: buf[offset + 3],
+            speed: buf[offset + 4],
           });
         }
       }
@@ -100,6 +101,7 @@ function InfoGrid({ satellite, position }) {
     ['Latitude', position ? `${position.lat.toFixed(2)}deg` : '--'],
     ['Longitude', position ? `${position.lon.toFixed(2)}deg` : '--'],
     ['Altitude', position ? `${position.alt.toFixed(1)} km` : '--'],
+    ['Velocity', position ? `${(position.speed * 3600).toFixed(0)} km/h (${position.speed.toFixed(2)} km/s)` : '--'],
     ['Inclination', satellite.inclination != null ? `${satellite.inclination.toFixed(2)}deg` : 'N/A'],
     ['Period', satellite.period != null ? `${satellite.period.toFixed(1)} min` : 'N/A'],
     ['Apogee', satellite.apogee != null ? `${satellite.apogee.toFixed(1)} km` : 'N/A'],

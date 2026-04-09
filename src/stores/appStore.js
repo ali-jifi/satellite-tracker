@@ -33,6 +33,22 @@ const useAppStore = create((set, get) => ({
   labelsVisible: true,
   toggleLabelsVisible: () => set((s) => ({ labelsVisible: !s.labelsVisible })),
 
+  // Simulation time state (mirrors CesiumJS Clock for React reactivity)
+  simSpeed: 1,
+  simPlaying: true,
+  simDirection: 1, // 1 = forward, -1 = rewind
+  setSimSpeed: (speed) => set({ simSpeed: speed }),
+  toggleSimPlaying: () => {
+    const state = get();
+    const viewer = state.viewerRef;
+    const next = !state.simPlaying;
+    if (viewer) {
+      viewer.clock.shouldAnimate = next;
+    }
+    set({ simPlaying: next });
+  },
+  setSimDirection: (dir) => set({ simDirection: dir }),
+
   // Space-Track credentials
   spaceTrackCredentials: null,
   setSpaceTrackCredentials: (creds) => set({ spaceTrackCredentials: creds }),

@@ -6,7 +6,7 @@ import SatelliteCard from './SatelliteCard';
 
 const DEBOUNCE_MS = 200;
 const ALTITUDE_REFRESH_MS = 2000;
-const STRIDE = 4; // Float64Array layout: [id, lat, lon, alt]
+const STRIDE = 5; // Float64Array layout: [id, lat, lon, alt, speed]
 
 function useAltitudeMap() {
   const [altMap, setAltMap] = useState(new Map());

@@ -1,4 +1,6 @@
+import * as Cesium from 'cesium';
 import useSatelliteStore from '../stores/satelliteStore.js';
+import useAppStore from '../stores/appStore.js';
 
 const PROPAGATION_INTERVAL_MS = 1000;
 
@@ -83,7 +85,11 @@ function startLoop() {
  */
 function sendPropagate() {
   if (worker) {
-    worker.postMessage({ type: 'propagate', timestamp: Date.now() });
+    const viewer = useAppStore.getState().viewerRef;
+    const clockTime = viewer
+      ? Cesium.JulianDate.toDate(viewer.clock.currentTime).getTime()
+      : Date.now();
+    worker.postMessage({ type: 'propagate', timestamp: clockTime });
   }
 }
 
