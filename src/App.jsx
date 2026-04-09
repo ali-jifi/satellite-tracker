@@ -5,6 +5,7 @@ import TopBar from './components/UI/TopBar';
 import MenuDrawer from './components/UI/MenuDrawer';
 import SettingsPanel from './components/UI/SettingsPanel';
 import ObserverLocation from './components/UI/ObserverLocation';
+import TimeWidget from './components/UI/TimeWidget';
 import useAppStore from './stores/appStore';
 
 function LoadingScreen() {
@@ -37,6 +38,7 @@ function App() {
           <MenuDrawer />
           <SettingsPanel />
           <ObserverLocation />
+          <TimeWidget />
         </>
       )}
     </>
