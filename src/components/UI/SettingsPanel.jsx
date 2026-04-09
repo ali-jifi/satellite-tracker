@@ -181,6 +181,12 @@ export default function SettingsPanel() {
   const toggleLabelsVisible = useAppStore((s) => s.toggleLabelsVisible);
   const debrisVisible = useAppStore((s) => s.debrisVisible);
   const toggleDebrisVisible = useAppStore((s) => s.toggleDebrisVisible);
+  const groundTracksVisible = useAppStore((s) => s.groundTracksVisible);
+  const toggleGroundTracks = useAppStore((s) => s.toggleGroundTracks);
+  const orbitLinesVisible = useAppStore((s) => s.orbitLinesVisible);
+  const toggleOrbitLines = useAppStore((s) => s.toggleOrbitLines);
+  const footprintsVisible = useAppStore((s) => s.footprintsVisible);
+  const toggleFootprints = useAppStore((s) => s.toggleFootprints);
 
   if (!settingsOpen) return null;
 
@@ -221,6 +227,30 @@ export default function SettingsPanel() {
             Show Debris
           </span>
           <ToggleSwitch enabled={debrisVisible} onToggle={toggleDebrisVisible} />
+        </div>
+
+        {/* Ground Tracks */}
+        <div className="flex items-center justify-between">
+          <span className="text-xs" style={{ color: 'var(--text-primary)' }}>
+            Ground Tracks
+          </span>
+          <ToggleSwitch enabled={groundTracksVisible} onToggle={toggleGroundTracks} />
+        </div>
+
+        {/* Orbit Lines */}
+        <div className="flex items-center justify-between">
+          <span className="text-xs" style={{ color: 'var(--text-primary)' }}>
+            Orbit Lines
+          </span>
+          <ToggleSwitch enabled={orbitLinesVisible} onToggle={toggleOrbitLines} />
+        </div>
+
+        {/* Visibility Footprints */}
+        <div className="flex items-center justify-between">
+          <span className="text-xs" style={{ color: 'var(--text-primary)' }}>
+            Visibility Footprints
+          </span>
+          <ToggleSwitch enabled={footprintsVisible} onToggle={toggleFootprints} />
         </div>
 
         {/* Atmosphere - placeholder */}

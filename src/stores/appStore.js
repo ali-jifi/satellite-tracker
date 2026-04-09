@@ -32,6 +32,12 @@ const useAppStore = create((set, get) => ({
   toggleDebrisVisible: () => set((s) => ({ debrisVisible: !s.debrisVisible })),
   labelsVisible: true,
   toggleLabelsVisible: () => set((s) => ({ labelsVisible: !s.labelsVisible })),
+  groundTracksVisible: true,
+  toggleGroundTracks: () => set((s) => ({ groundTracksVisible: !s.groundTracksVisible })),
+  orbitLinesVisible: true,
+  toggleOrbitLines: () => set((s) => ({ orbitLinesVisible: !s.orbitLinesVisible })),
+  footprintsVisible: true,
+  toggleFootprints: () => set((s) => ({ footprintsVisible: !s.footprintsVisible })),
 
   // Simulation time state (mirrors CesiumJS Clock for React reactivity)
   simSpeed: 1,
