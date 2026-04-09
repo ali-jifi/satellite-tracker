@@ -69,6 +69,10 @@ const useAppStore = create((set, get) => ({
   hudVisible: false,
   toggleHud: () => set((s) => ({ hudVisible: !s.hudVisible })),
 
+  // Shortcut help overlay
+  shortcutHelpOpen: false,
+  toggleShortcutHelp: () => set((s) => ({ shortcutHelpOpen: !s.shortcutHelpOpen })),
+
   // Space-Track credentials
   spaceTrackCredentials: null,
   setSpaceTrackCredentials: (creds) => set({ spaceTrackCredentials: creds }),

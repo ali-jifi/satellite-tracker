@@ -9,6 +9,8 @@ import SettingsPanel from './components/UI/SettingsPanel';
 import ObserverLocation from './components/UI/ObserverLocation';
 import TimeWidget from './components/UI/TimeWidget';
 import DetailPanel from './components/UI/DetailPanel';
+import KeyboardShortcuts from './components/UI/KeyboardShortcuts';
+import ShortcutHelpOverlay from './components/UI/ShortcutHelpOverlay';
 import useAppStore from './stores/appStore';
 
 function LoadingScreen() {
@@ -45,8 +47,10 @@ function App() {
           <ObserverLocation />
           <TimeWidget />
           <DetailPanel />
+          <KeyboardShortcuts />
         </>
       )}
+      <ShortcutHelpOverlay />
     </>
   );
 }
