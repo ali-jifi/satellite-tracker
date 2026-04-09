@@ -39,6 +39,14 @@ const useAppStore = create((set, get) => ({
   footprintsVisible: true,
   toggleFootprints: () => set((s) => ({ footprintsVisible: !s.footprintsVisible })),
 
+  // Globe style & visual options
+  globeStyle: 'photo', // 'photo' | 'daynight' | 'dark'
+  setGlobeStyle: (style) => set({ globeStyle: style }),
+  atmosphereEnabled: false,
+  toggleAtmosphere: () => set((s) => ({ atmosphereEnabled: !s.atmosphereEnabled })),
+  cloudsEnabled: false,
+  toggleClouds: () => set((s) => ({ cloudsEnabled: !s.cloudsEnabled })),
+
   // Simulation time state (mirrors CesiumJS Clock for React reactivity)
   simSpeed: 1,
   simPlaying: true,

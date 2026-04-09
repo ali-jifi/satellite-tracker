@@ -187,6 +187,12 @@ export default function SettingsPanel() {
   const toggleOrbitLines = useAppStore((s) => s.toggleOrbitLines);
   const footprintsVisible = useAppStore((s) => s.footprintsVisible);
   const toggleFootprints = useAppStore((s) => s.toggleFootprints);
+  const atmosphereEnabled = useAppStore((s) => s.atmosphereEnabled);
+  const toggleAtmosphere = useAppStore((s) => s.toggleAtmosphere);
+  const cloudsEnabled = useAppStore((s) => s.cloudsEnabled);
+  const toggleClouds = useAppStore((s) => s.toggleClouds);
+  const globeStyle = useAppStore((s) => s.globeStyle);
+  const setGlobeStyle = useAppStore((s) => s.setGlobeStyle);
 
   if (!settingsOpen) return null;
 
@@ -253,21 +259,52 @@ export default function SettingsPanel() {
           <ToggleSwitch enabled={footprintsVisible} onToggle={toggleFootprints} />
         </div>
 
-        {/* Atmosphere - placeholder */}
-        <div className="flex items-center justify-between opacity-40">
+        {/* Atmosphere */}
+        <div className="flex items-center justify-between">
           <span className="text-xs" style={{ color: 'var(--text-primary)' }}>
             Atmosphere
           </span>
-          <ToggleSwitch enabled={false} onToggle={() => {}} disabled />
+          <ToggleSwitch enabled={atmosphereEnabled} onToggle={toggleAtmosphere} />
         </div>
 
-        {/* Clouds - placeholder */}
-        <div className="flex items-center justify-between opacity-40">
+        {/* Clouds */}
+        <div className="flex items-center justify-between">
           <span className="text-xs" style={{ color: 'var(--text-primary)' }}>
             Clouds
           </span>
-          <ToggleSwitch enabled={false} onToggle={() => {}} disabled />
+          <ToggleSwitch enabled={cloudsEnabled} onToggle={toggleClouds} />
         </div>
+      </div>
+
+      {/* Globe Style divider */}
+      <div className="my-4" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }} />
+
+      {/* Globe Style section */}
+      <h3
+        className="text-[10px] tracking-[0.2em] uppercase mb-3"
+        style={{ color: 'var(--accent)', fontWeight: 600 }}
+      >
+        GLOBE STYLE
+      </h3>
+      <div className="flex gap-2 mb-0">
+        {[
+          { key: 'photo', label: 'Photo' },
+          { key: 'daynight', label: 'Day/Night' },
+          { key: 'dark', label: 'Dark' },
+        ].map(({ key, label }) => (
+          <button
+            key={key}
+            onClick={() => setGlobeStyle(key)}
+            className="flex-1 text-[10px] py-1.5 rounded-full cursor-pointer transition-colors duration-200"
+            style={{
+              background: globeStyle === key ? 'var(--accent)' : 'rgba(255,255,255,0.08)',
+              color: globeStyle === key ? '#0a0e17' : 'var(--text-secondary)',
+              fontWeight: globeStyle === key ? 600 : 400,
+            }}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
       {/* Data Sources divider */}
