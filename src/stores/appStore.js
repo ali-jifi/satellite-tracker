@@ -73,6 +73,24 @@ const useAppStore = create((set, get) => ({
   shortcutHelpOpen: false,
   toggleShortcutHelp: () => set((s) => ({ shortcutHelpOpen: !s.shortcutHelpOpen })),
 
+  // Bookmarks (NORAD IDs persisted to localStorage)
+  bookmarks: JSON.parse(localStorage.getItem('sat-tracker-bookmarks') || '[]'),
+  setBookmarks: (ids) => {
+    localStorage.setItem('sat-tracker-bookmarks', JSON.stringify(ids));
+    set({ bookmarks: ids });
+  },
+  toggleBookmark: (id) => {
+    const { bookmarks } = get();
+    let next;
+    if (bookmarks.includes(id)) {
+      next = bookmarks.filter((b) => b !== id);
+    } else {
+      next = [...bookmarks, id];
+    }
+    localStorage.setItem('sat-tracker-bookmarks', JSON.stringify(next));
+    set({ bookmarks: next });
+  },
+
   // Space-Track credentials
   spaceTrackCredentials: null,
   setSpaceTrackCredentials: (creds) => set({ spaceTrackCredentials: creds }),

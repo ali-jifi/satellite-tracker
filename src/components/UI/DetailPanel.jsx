@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Crosshair, Eye } from 'lucide-react';
+import { X, Crosshair, Eye, Bookmark, Link, Check } from 'lucide-react';
 import * as satellite from 'satellite.js';
 import useSatelliteStore from '../../stores/satelliteStore';
 import useAppStore from '../../stores/appStore';
+import { copyShareUrl } from '../../hooks/useUrlSync';
 import { findPasses } from '../../utils/passPredictor';
 
 const STRIDE = 5;
@@ -431,6 +432,19 @@ export default function DetailPanel() {
   const observerLocation = useAppStore((s) => s.observerLocation);
   const cameraMode = useAppStore((s) => s.cameraMode);
   const setCameraMode = useAppStore((s) => s.setCameraMode);
+  const bookmarks = useAppStore((s) => s.bookmarks);
+  const toggleBookmark = useAppStore((s) => s.toggleBookmark);
+
+  const [copied, setCopied] = useState(false);
+
+  const isBookmarked = detailSatelliteId != null && bookmarks.includes(detailSatelliteId);
+
+  const handleCopyUrl = useCallback(() => {
+    if (detailSatelliteId == null) return;
+    copyShareUrl(detailSatelliteId);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }, [detailSatelliteId]);
 
   if (!sat) return null;
 
@@ -466,6 +480,28 @@ export default function DetailPanel() {
             </div>
           </div>
           <div className="flex items-center gap-1 flex-shrink-0">
+            <button
+              onClick={() => toggleBookmark(detailSatelliteId)}
+              className="p-0.5 rounded hover:bg-[var(--glass-hover)]"
+              title={isBookmarked ? 'Remove bookmark' : 'Bookmark satellite'}
+            >
+              <Bookmark
+                size={14}
+                fill={isBookmarked ? 'var(--accent)' : 'none'}
+                style={{ color: isBookmarked ? 'var(--accent)' : 'var(--text-secondary)' }}
+              />
+            </button>
+            <button
+              onClick={handleCopyUrl}
+              className="p-0.5 rounded hover:bg-[var(--glass-hover)]"
+              title="Copy share URL"
+            >
+              {copied ? (
+                <Check size={14} style={{ color: 'var(--accent)' }} />
+              ) : (
+                <Link size={14} style={{ color: 'var(--text-secondary)' }} />
+              )}
+            </button>
             <button
               onClick={() => setCameraMode(cameraMode === 'follow' ? 'free' : 'follow')}
               className="p-0.5 rounded hover:bg-[var(--glass-hover)]"

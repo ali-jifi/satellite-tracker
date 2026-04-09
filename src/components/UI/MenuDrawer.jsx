@@ -2,6 +2,7 @@ import { MapPin } from 'lucide-react';
 import useAppStore from '../../stores/appStore';
 import SearchBar from './SearchBar';
 import SelectedPanel from './SelectedPanel';
+import BookmarkSection from './BookmarkSection';
 import CategoryTree from './CategoryTree';
 
 export default function MenuDrawer() {
@@ -24,6 +25,9 @@ export default function MenuDrawer() {
 
         {/* Selected satellites panel -- visible when satellites selected */}
         <SelectedPanel />
+
+        {/* Bookmarked satellites -- visible when bookmarks exist */}
+        <BookmarkSection />
 
         {/* Category tree -- always visible, scrollable */}
         <CategoryTree />

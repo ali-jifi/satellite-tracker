@@ -11,6 +11,7 @@ import TimeWidget from './components/UI/TimeWidget';
 import DetailPanel from './components/UI/DetailPanel';
 import KeyboardShortcuts from './components/UI/KeyboardShortcuts';
 import ShortcutHelpOverlay from './components/UI/ShortcutHelpOverlay';
+import useUrlSync from './hooks/useUrlSync';
 import useAppStore from './stores/appStore';
 
 function LoadingScreen() {
@@ -26,6 +27,11 @@ function LoadingScreen() {
       />
     </div>
   );
+}
+
+function UrlSync() {
+  useUrlSync();
+  return null;
 }
 
 function App() {
@@ -48,6 +54,7 @@ function App() {
           <TimeWidget />
           <DetailPanel />
           <KeyboardShortcuts />
+          <UrlSync />
         </>
       )}
       <ShortcutHelpOverlay />
