@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import CesiumContainer from './components/Globe/CesiumContainer';
 import SatelliteRenderer from './components/Globe/SatelliteRenderer';
 import SelectedSatelliteManager from './components/Globe/SelectedSatelliteManager';
@@ -18,6 +19,7 @@ import PhotobombPanel from './components/UI/PhotobombPanel';
 import CloseApproachPanel from './components/UI/CloseApproachPanel';
 import ToastContainer from './components/UI/ToastContainer';
 import AnalysisVisualizationManager from './components/Globe/AnalysisVisualizationManager';
+import { startNotificationScheduler, stopNotificationScheduler } from './services/notificationScheduler';
 import useUrlSync from './hooks/useUrlSync';
 import useAppStore from './stores/appStore';
 
@@ -38,6 +40,20 @@ function LoadingScreen() {
 
 function UrlSync() {
   useUrlSync();
+  return null;
+}
+
+function NotificationSchedulerInit() {
+  const initialized = useRef(false);
+  useEffect(() => {
+    if (initialized.current) return;
+    initialized.current = true;
+    startNotificationScheduler();
+    return () => {
+      stopNotificationScheduler();
+      initialized.current = false;
+    };
+  }, []);
   return null;
 }
 
@@ -67,6 +83,7 @@ function App() {
           <CloseApproachPanel />
           <AnalysisVisualizationManager />
           <KeyboardShortcuts />
+          <NotificationSchedulerInit />
           <UrlSync />
         </>
       )}

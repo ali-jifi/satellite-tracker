@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import useAppStore from '../../stores/appStore';
+import NotificationSettings from './NotificationSettings';
 
 const LOCALSTORAGE_KEY = 'spacetrack-creds';
 
@@ -331,6 +332,19 @@ export default function SettingsPanel() {
         {/* Space-Track - configurable */}
         <SpaceTrackSection />
       </div>
+
+      {/* Notifications divider */}
+      <div className="my-4" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }} />
+
+      {/* Notifications section */}
+      <h3
+        className="text-[10px] tracking-[0.2em] uppercase mb-3"
+        style={{ color: 'var(--accent)', fontWeight: 600 }}
+      >
+        NOTIFICATIONS
+      </h3>
+
+      <NotificationSettings />
     </div>
   );
 }
