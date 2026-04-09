@@ -70,6 +70,8 @@ const useAnalysisStore = create((set) => ({
   closeApproachResults: [],
   transitResults: [],
   constellationData: null,
+  highlightedConstellation: null,
+  closeApproachVisualization: null,
 
   // Computing flags
   reentryComputing: false,
@@ -83,6 +85,14 @@ const useAnalysisStore = create((set) => ({
   setTransitResults: (results) =>
     set({ transitResults: results, transitComputing: false }),
   setConstellationData: (data) => set({ constellationData: data }),
+  setHighlightedConstellation: (name) => set({ highlightedConstellation: name }),
+  setCloseApproachVisualization: (data) => set({ closeApproachVisualization: data }),
+
+  clearCloseApproachVisualization: () => set({ closeApproachVisualization: null }),
+
+  // Close approach progress (0-100)
+  closeApproachProgress: 0,
+  setCloseApproachProgress: (p) => set({ closeApproachProgress: p }),
 
   setReentryComputing: (v) => set({ reentryComputing: v }),
   setCloseApproachComputing: (v) => set({ closeApproachComputing: v }),

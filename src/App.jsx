@@ -13,7 +13,10 @@ import KeyboardShortcuts from './components/UI/KeyboardShortcuts';
 import ShortcutHelpOverlay from './components/UI/ShortcutHelpOverlay';
 import ReentryPanel from './components/UI/ReentryPanel';
 import TleAnalyzerPanel from './components/UI/TleAnalyzerPanel';
+import ConstellationDashboard from './components/UI/ConstellationDashboard';
+import PhotobombPanel from './components/UI/PhotobombPanel';
 import ToastContainer from './components/UI/ToastContainer';
+import AnalysisVisualizationManager from './components/Globe/AnalysisVisualizationManager';
 import useUrlSync from './hooks/useUrlSync';
 import useAppStore from './stores/appStore';
 
@@ -58,6 +61,9 @@ function App() {
           <DetailPanel />
           <ReentryPanel />
           <TleAnalyzerPanel />
+          <ConstellationDashboard />
+          <PhotobombPanel />
+          <AnalysisVisualizationManager />
           <KeyboardShortcuts />
           <UrlSync />
         </>
