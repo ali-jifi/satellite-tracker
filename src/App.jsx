@@ -64,6 +64,7 @@ function App() {
           <TleAnalyzerPanel />
           <ConstellationDashboard />
           <PhotobombPanel />
+          <CloseApproachPanel />
           <AnalysisVisualizationManager />
           <KeyboardShortcuts />
           <UrlSync />
