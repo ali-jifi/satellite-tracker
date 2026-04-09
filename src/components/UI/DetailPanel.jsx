@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { X } from 'lucide-react';
+import { X, Crosshair, Eye } from 'lucide-react';
 import * as satellite from 'satellite.js';
 import useSatelliteStore from '../../stores/satelliteStore';
 import useAppStore from '../../stores/appStore';
@@ -429,6 +429,8 @@ export default function DetailPanel() {
   const { passes, computing } = usePassPredictions(detailSatelliteId, sat);
   const countdown = useSimCountdown(passes);
   const observerLocation = useAppStore((s) => s.observerLocation);
+  const cameraMode = useAppStore((s) => s.cameraMode);
+  const setCameraMode = useAppStore((s) => s.setCameraMode);
 
   if (!sat) return null;
 
@@ -463,13 +465,41 @@ export default function DetailPanel() {
               NORAD {sat.id}
             </div>
           </div>
-          <button
-            onClick={clearDetail}
-            className="p-0.5 rounded hover:bg-[var(--glass-hover)] flex-shrink-0"
-            title="Close detail"
-          >
-            <X size={14} style={{ color: 'var(--text-secondary)' }} />
-          </button>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <button
+              onClick={() => setCameraMode(cameraMode === 'follow' ? 'free' : 'follow')}
+              className="p-0.5 rounded hover:bg-[var(--glass-hover)]"
+              title="Follow satellite"
+              style={{
+                background: cameraMode === 'follow' ? 'rgba(56, 243, 191, 0.15)' : undefined,
+              }}
+            >
+              <Crosshair
+                size={14}
+                style={{ color: cameraMode === 'follow' ? 'var(--accent)' : 'var(--text-secondary)' }}
+              />
+            </button>
+            <button
+              onClick={() => setCameraMode(cameraMode === 'pov' ? 'free' : 'pov')}
+              className="p-0.5 rounded hover:bg-[var(--glass-hover)]"
+              title="First-person view"
+              style={{
+                background: cameraMode === 'pov' ? 'rgba(56, 243, 191, 0.15)' : undefined,
+              }}
+            >
+              <Eye
+                size={14}
+                style={{ color: cameraMode === 'pov' ? 'var(--accent)' : 'var(--text-secondary)' }}
+              />
+            </button>
+            <button
+              onClick={clearDetail}
+              className="p-0.5 rounded hover:bg-[var(--glass-hover)]"
+              title="Close detail"
+            >
+              <X size={14} style={{ color: 'var(--text-secondary)' }} />
+            </button>
+          </div>
         </div>
 
         {/* Position */}
