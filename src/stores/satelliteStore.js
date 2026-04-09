@@ -151,6 +151,11 @@ const useSatelliteStore = create((set, get) => ({
   setPositionBuffer: (buffer, count) =>
     set({ positionBuffer: buffer, positionCount: count }),
 
+  // === Detail panel state ===
+  detailSatelliteId: null,
+  setDetailSatelliteId: (id) => set({ detailSatelliteId: id }),
+  clearDetailSatelliteId: () => set({ detailSatelliteId: null }),
+
   // === Category and country indexes ===
   categoryIndex: new Map(),
   countryIndex: new Map(),

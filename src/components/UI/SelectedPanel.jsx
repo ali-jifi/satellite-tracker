@@ -5,43 +5,20 @@ import { CATEGORY_COLORS } from '../../utils/colorModes.js';
 
 const MAX_SELECTED = 20;
 const STRIDE = 5;
-const ALTITUDE_REFRESH_MS = 2000;
 
-function useSelectedPositions() {
-  const [positions, setPositions] = useState(new Map());
-
-  useEffect(() => {
-    function update() {
-      const { positionBuffer, positionCount, selectedIds } = useSatelliteStore.getState();
-      if (!positionBuffer || positionCount === 0 || selectedIds.size === 0) return;
-      const buf = new Float64Array(positionBuffer);
-      const next = new Map();
-      for (let i = 0; i < positionCount; i++) {
-        const offset = i * STRIDE;
-        const id = buf[offset];
-        if (selectedIds.has(id)) {
-          next.set(id, {
-            lat: buf[offset + 1],
-            lon: buf[offset + 2],
-            alt: buf[offset + 3],
-            speed: buf[offset + 4],
-          });
-        }
-      }
-      setPositions(next);
-    }
-
-    update();
-    const iv = setInterval(update, ALTITUDE_REFRESH_MS);
-    return () => clearInterval(iv);
-  }, []);
-
-  return positions;
-}
-
-function SelectedSatelliteRow({ satellite, onDeselect, position }) {
-  const [showInfo, setShowInfo] = useState(false);
+function SelectedSatelliteRow({ satellite, onDeselect }) {
+  const detailSatelliteId = useSatelliteStore((s) => s.detailSatelliteId);
+  const isDetailActive = detailSatelliteId === satellite.id;
   const color = CATEGORY_COLORS[satellite.category] || '#cccccc';
+
+  const handleInfoClick = () => {
+    const store = useSatelliteStore.getState();
+    if (store.detailSatelliteId === satellite.id) {
+      store.clearDetailSatelliteId();
+    } else {
+      store.setDetailSatelliteId(satellite.id);
+    }
+  };
 
   return (
     <div className="mb-0.5">
@@ -62,15 +39,14 @@ function SelectedSatelliteRow({ satellite, onDeselect, position }) {
 
         {/* Info toggle */}
         <button
-          onClick={() => setShowInfo(!showInfo)}
+          onClick={handleInfoClick}
           className="p-0.5 rounded hover:bg-[var(--glass-hover)]"
-          title="Satellite info"
+          title="Satellite detail"
         >
-          {showInfo ? (
-            <ChevronUp size={11} style={{ color: 'var(--accent)' }} />
-          ) : (
-            <Info size={11} style={{ color: 'var(--text-secondary)' }} />
-          )}
+          <Info
+            size={11}
+            style={{ color: isDetailActive ? 'var(--accent)' : 'var(--text-secondary)' }}
+          />
         </button>
 
         {/* Deselect */}
@@ -82,44 +58,6 @@ function SelectedSatelliteRow({ satellite, onDeselect, position }) {
           <X size={11} style={{ color: 'var(--text-secondary)' }} />
         </button>
       </div>
-
-      {/* Expanded info */}
-      {showInfo && (
-        <div className="ml-5 mr-2 mb-2 px-2 py-1.5 rounded bg-black/20 border border-white/5">
-          <InfoGrid satellite={satellite} position={position} />
-        </div>
-      )}
-    </div>
-  );
-}
-
-function InfoGrid({ satellite, position }) {
-  const rows = [
-    ['NORAD ID', satellite.id],
-    ['Category', satellite.category || 'N/A'],
-    ['Country', satellite.countryCode || 'N/A'],
-    ['Latitude', position ? `${position.lat.toFixed(2)}deg` : '--'],
-    ['Longitude', position ? `${position.lon.toFixed(2)}deg` : '--'],
-    ['Altitude', position ? `${position.alt.toFixed(1)} km` : '--'],
-    ['Velocity', position ? `${(position.speed * 3600).toFixed(0)} km/h (${position.speed.toFixed(2)} km/s)` : '--'],
-    ['Inclination', satellite.inclination != null ? `${satellite.inclination.toFixed(2)}deg` : 'N/A'],
-    ['Period', satellite.period != null ? `${satellite.period.toFixed(1)} min` : 'N/A'],
-    ['Apogee', satellite.apogee != null ? `${satellite.apogee.toFixed(1)} km` : 'N/A'],
-    ['Perigee', satellite.perigee != null ? `${satellite.perigee.toFixed(1)} km` : 'N/A'],
-  ];
-
-  return (
-    <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
-      {rows.map(([label, value]) => (
-        <div key={label} className="flex justify-between">
-          <span className="text-[9px]" style={{ color: 'var(--text-secondary)' }}>
-            {label}
-          </span>
-          <span className="text-[9px] tabular-nums" style={{ color: 'var(--text-primary)' }}>
-            {value}
-          </span>
-        </div>
-      ))}
     </div>
   );
 }
@@ -129,7 +67,19 @@ export default function SelectedPanel() {
   const satellites = useSatelliteStore((s) => s.satellites);
   const deselectSatellite = useSatelliteStore((s) => s.deselectSatellite);
   const clearSelection = useSatelliteStore((s) => s.clearSelection);
-  const positions = useSelectedPositions();
+
+  const handleDeselect = useCallback((id) => {
+    // If detail panel is showing this satellite, close it
+    if (useSatelliteStore.getState().detailSatelliteId === id) {
+      useSatelliteStore.getState().clearDetailSatelliteId();
+    }
+    deselectSatellite(id);
+  }, [deselectSatellite]);
+
+  const handleClearAll = useCallback(() => {
+    useSatelliteStore.getState().clearDetailSatelliteId();
+    clearSelection();
+  }, [clearSelection]);
 
   const count = selectedIds.size;
   if (count === 0) return null;
@@ -151,7 +101,7 @@ export default function SelectedPanel() {
           Selected ({count}/{MAX_SELECTED})
         </h3>
         <button
-          onClick={clearSelection}
+          onClick={handleClearAll}
           className="flex items-center gap-1 text-[9px] px-2 py-0.5 rounded border border-white/10 hover:bg-[var(--glass-hover)] transition-colors"
           style={{ color: 'var(--text-secondary)' }}
         >
@@ -166,8 +116,7 @@ export default function SelectedPanel() {
           <SelectedSatelliteRow
             key={sat.id}
             satellite={sat}
-            onDeselect={deselectSatellite}
-            position={positions.get(sat.id)}
+            onDeselect={handleDeselect}
           />
         ))}
       </div>
