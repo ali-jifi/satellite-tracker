@@ -24,6 +24,28 @@ export const REVEAL_START = {
 
 export const REVEAL_DURATION = 2.5; // seconds
 
+// Globe style configurations
+export const GLOBE_STYLES = {
+  photo: {
+    tileUrl: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    baseColor: '#131b2e',
+    enableLighting: true,
+    tileAlpha: 1.0,
+  },
+  daynight: {
+    tileUrl: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    baseColor: '#131b2e',
+    enableLighting: true,
+    tileAlpha: 1.0,
+  },
+  dark: {
+    tileUrl: 'https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png',
+    baseColor: '#1a1a1a',
+    enableLighting: false,
+    tileAlpha: 0.3,
+  },
+};
+
 // Zoom limits (approximate satellitemap.space range)
 export const MIN_ZOOM_DISTANCE = 500_000;   // ~500 km
 export const MAX_ZOOM_DISTANCE = 80_000_000; // ~80,000 km

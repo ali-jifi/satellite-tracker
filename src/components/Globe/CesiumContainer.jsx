@@ -10,6 +10,7 @@ import {
   REVEAL_DURATION,
   MIN_ZOOM_DISTANCE,
   MAX_ZOOM_DISTANCE,
+  GLOBE_STYLES,
 } from './GlobeConfig';
 import useAppStore from '../../stores/appStore';
 import useSatelliteStore from '../../stores/satelliteStore';
@@ -42,15 +43,57 @@ async function fetchSpaceTrackData() {
   }
 }
 
+/**
+ * Apply a globe style by swapping base imagery and adjusting globe properties.
+ * Preserves the grid layer if present.
+ */
+function applyGlobeStyle(viewer, style, gridLayerRef, cloudLayerRef) {
+  const config = GLOBE_STYLES[style] || GLOBE_STYLES.photo;
+  const layers = viewer.imageryLayers;
+
+  // Remember grid layer state
+  const gridLayer = gridLayerRef.current;
+
+  // Remove all layers except grid
+  for (let i = layers.length - 1; i >= 0; i--) {
+    const layer = layers.get(i);
+    if (layer !== gridLayer) {
+      layers.remove(layer, true);
+    }
+  }
+
+  // Cloud layer was removed; clear the ref so the clouds effect can re-add it
+  if (cloudLayerRef) cloudLayerRef.current = null;
+
+  // Add new base tiles at index 0 (below grid)
+  const baseTiles = new Cesium.UrlTemplateImageryProvider({
+    url: config.tileUrl,
+    subdomains: ['a', 'b', 'c', 'd'],
+    credit: new Cesium.Credit('CartoDB'),
+    minimumLevel: 0,
+    maximumLevel: 18,
+  });
+  const baseLayer = layers.addImageryProvider(baseTiles, 0);
+  baseLayer.alpha = config.tileAlpha;
+
+  // Apply globe properties
+  viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString(config.baseColor);
+  viewer.scene.globe.enableLighting = config.enableLighting;
+}
+
 export default function CesiumContainer() {
   const containerRef = useRef(null);
   const initialized = useRef(false);
   const viewerInstance = useRef(null);
   const gridLayerRef = useRef(null);
+  const cloudLayerRef = useRef(null);
   const setViewerRef = useAppStore((s) => s.setViewerRef);
   const setLoading = useAppStore((s) => s.setLoading);
   const observerLocation = useAppStore((s) => s.observerLocation);
   const gridLinesVisible = useAppStore((s) => s.gridLinesVisible);
+  const globeStyle = useAppStore((s) => s.globeStyle);
+  const atmosphereEnabled = useAppStore((s) => s.atmosphereEnabled);
+  const cloudsEnabled = useAppStore((s) => s.cloudsEnabled);
 
   useEffect(() => {
     // Guard against React Strict Mode double-mount
@@ -286,6 +329,79 @@ export default function CesiumContainer() {
       gridLayerRef.current.show = gridLinesVisible;
     }
   }, [gridLinesVisible]);
+
+  // Globe style switching
+  useEffect(() => {
+    if (!viewerInstance.current) return;
+    applyGlobeStyle(viewerInstance.current, globeStyle, gridLayerRef, cloudLayerRef);
+  }, [globeStyle]);
+
+  // Atmosphere toggle
+  useEffect(() => {
+    if (!viewerInstance.current) return;
+    const viewer = viewerInstance.current;
+    viewer.scene.skyAtmosphere.show = atmosphereEnabled;
+    viewer.scene.globe.showGroundAtmosphere = atmosphereEnabled;
+    viewer.scene.fog.enabled = atmosphereEnabled;
+  }, [atmosphereEnabled]);
+
+  // Cloud layer (NASA GIBS WMTS)
+  useEffect(() => {
+    if (!viewerInstance.current) return;
+    const viewer = viewerInstance.current;
+    const layers = viewer.imageryLayers;
+
+    if (cloudsEnabled) {
+      // Use yesterday's date (today's imagery may not be available yet)
+      const yesterday = new Date(Date.now() - 86400000);
+      const dateStr = yesterday.toISOString().split('T')[0];
+
+      try {
+        const cloudProvider = new Cesium.WebMapTileServiceImageryProvider({
+          url: 'https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/wmts.cgi',
+          layer: 'VIIRS_SNPP_CorrectedReflectance_TrueColor',
+          style: 'default',
+          tileMatrixSetID: '250m',
+          format: 'image/jpeg',
+          tilingScheme: new Cesium.GeographicTilingScheme(),
+          tileWidth: 256,
+          tileHeight: 256,
+          maximumLevel: 8,
+          times: new Cesium.TimeIntervalCollection([
+            new Cesium.TimeInterval({
+              start: Cesium.JulianDate.fromIso8601(dateStr),
+              stop: Cesium.JulianDate.fromIso8601(dateStr),
+            }),
+          ]),
+          clock: viewer.clock,
+        });
+
+        // Add cloud layer on top of base tiles but below grid
+        const gridLayer = gridLayerRef.current;
+        let insertIndex = layers.length;
+        if (gridLayer) {
+          insertIndex = layers.indexOf(gridLayer);
+          if (insertIndex < 0) insertIndex = layers.length;
+        }
+
+        const cloudLayer = layers.addImageryProvider(cloudProvider, insertIndex);
+        cloudLayer.alpha = 0.5;
+        cloudLayerRef.current = cloudLayer;
+      } catch (err) {
+        console.warn('[CesiumContainer] Failed to add cloud layer:', err.message);
+      }
+    } else {
+      // Remove cloud layer if it exists
+      if (cloudLayerRef.current) {
+        try {
+          layers.remove(cloudLayerRef.current, true);
+        } catch {
+          // layer may already be removed
+        }
+        cloudLayerRef.current = null;
+      }
+    }
+  }, [cloudsEnabled, globeStyle]);
 
   return (
     <div ref={containerRef} style={{ position: 'absolute', inset: 0 }} />
