@@ -15,6 +15,7 @@ import ReentryPanel from './components/UI/ReentryPanel';
 import TleAnalyzerPanel from './components/UI/TleAnalyzerPanel';
 import ConstellationDashboard from './components/UI/ConstellationDashboard';
 import PhotobombPanel from './components/UI/PhotobombPanel';
+import CloseApproachPanel from './components/UI/CloseApproachPanel';
 import ToastContainer from './components/UI/ToastContainer';
 import AnalysisVisualizationManager from './components/Globe/AnalysisVisualizationManager';
 import useUrlSync from './hooks/useUrlSync';
