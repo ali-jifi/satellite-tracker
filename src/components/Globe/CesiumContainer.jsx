@@ -312,6 +312,15 @@ export default function CesiumContainer() {
       },
     });
 
+    // Click handler for observer-dot to enter sky dome
+    const clickHandler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+    clickHandler.setInputAction((event) => {
+      const picked = viewer.scene.pick(event.position);
+      if (picked && picked.id && picked.id.id === 'observer-dot') {
+        useAppStore.getState().setCameraMode('skydome');
+      }
+    }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+
     // Fly to observer at ~2000km altitude
     viewer.camera.flyTo({
       destination: Cesium.Cartesian3.fromDegrees(
@@ -321,6 +330,10 @@ export default function CesiumContainer() {
       ),
       duration: 1.5,
     });
+
+    return () => {
+      clickHandler.destroy();
+    };
   }, [observerLocation]);
 
   // Grid lines toggle reactivity
