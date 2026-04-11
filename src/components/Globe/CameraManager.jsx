@@ -6,13 +6,7 @@ import useSatelliteStore from '../../stores/satelliteStore';
 
 const RAD2DEG = 180 / Math.PI;
 
-/**
- * CameraManager -- imperative component managing camera mode transitions.
- *
- * Subscribes to cameraMode from appStore and detailSatelliteId from satelliteStore.
- * Manages follow-cam (lookAtTransform + HeadingPitchRange) and POV (setView per tick).
- * Renders HUD overlay for POV mode.
- */
+// imperative component managing camera mode transitions (follow-cam, POV, free)
 export default function CameraManager() {
   const tickListenerRef = useRef(null);
   const activeModeRef = useRef('free');
@@ -30,15 +24,15 @@ export default function CameraManager() {
     const targetMode = cameraMode;
     const prevMode = activeModeRef.current;
 
-    // Guard: follow/pov require a selected satellite
+    // guard: follow/pov require a selected sat
     if ((targetMode === 'follow' || targetMode === 'pov') && detailSatelliteId == null) {
       return;
     }
 
-    // No change
+    // no change
     if (targetMode === prevMode && targetMode === 'free') return;
 
-    // Clean up previous mode
+    // clean up prev mode
     cleanupMode(viewer, tickListenerRef);
 
     if (targetMode === 'free') {
@@ -59,11 +53,11 @@ export default function CameraManager() {
       return;
     }
 
-    // Unknown mode or skydome -- treat as free
+    // unknown mode or skydome -- treat as free
     activeModeRef.current = targetMode;
   }, [cameraMode, detailSatelliteId]);
 
-  // Cleanup on unmount
+  // cleanup on unmount
   useEffect(() => {
     return () => {
       const viewer = useAppStore.getState().viewerRef;
@@ -74,7 +68,7 @@ export default function CameraManager() {
     };
   }, []);
 
-  // HUD overlay for POV mode
+  // hud overlay for pov mode
   const showHud = cameraMode === 'pov' && hudVisible && hudData;
 
   return showHud ? (
@@ -119,9 +113,7 @@ function formatLonHud(deg) {
   return `${Math.abs(deg).toFixed(2)}\u00B0 ${deg >= 0 ? 'E' : 'W'}`;
 }
 
-/**
- * Remove any active tick listener.
- */
+// remove any active tick listener
 function cleanupMode(viewer, tickListenerRef) {
   if (tickListenerRef.current) {
     viewer.clock.onTick.removeEventListener(tickListenerRef.current);
@@ -129,35 +121,29 @@ function cleanupMode(viewer, tickListenerRef) {
   }
 }
 
-/**
- * Return to free camera mode.
- */
+// return to free camera mode
 function enterFreeMode(viewer) {
-  // Unlock camera from any transform
+  // unlock camera from any transform
   viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY);
-  // Re-enable collision detection
+  // re-enable collision detection
   viewer.scene.screenSpaceCameraController.enableCollisionDetection = true;
-  // Hide HUD
+  // hide HUD
   useAppStore.getState().hudVisible && useAppStore.setState({ hudVisible: false });
 }
 
-/**
- * Get satrec for a satellite by NORAD ID.
- */
+// get satrec for a sat by NORAD ID
 function getSatrec(noradId) {
   const sat = useSatelliteStore.getState().satellites.get(noradId);
   if (!sat || !sat.satrec) return null;
   return sat.satrec;
 }
 
-/**
- * Enter follow-cam mode: fly to satellite, then track with lookAtTransform.
- */
+// enter follow-cam: fly to sat, then track with lookAtTransform
 function enterFollowMode(viewer, noradId, tickListenerRef, hudDataRef, setHudData) {
   const satrec = getSatrec(noradId);
   if (!satrec) return;
 
-  // Get current satellite position for fly-to target
+  // get current sat pos for fly-to target
   const jsDate = Cesium.JulianDate.toDate(viewer.clock.currentTime);
   const posVel = satellite.propagate(satrec, jsDate);
   if (!posVel.position) return;
@@ -168,7 +154,7 @@ function enterFollowMode(viewer, noradId, tickListenerRef, hudDataRef, setHudDat
   const lat = satellite.degreesLat(geo.latitude);
   const altM = geo.height * 1000;
 
-  // Fly to above the satellite
+  // fly to above the sat
   const destination = Cesium.Cartesian3.fromDegrees(lon, lat, altM + 500000);
 
   viewer.camera.flyTo({
@@ -181,7 +167,7 @@ function enterFollowMode(viewer, noradId, tickListenerRef, hudDataRef, setHudDat
     duration: 1.5,
     easingFunction: Cesium.EasingFunction.CUBIC_IN_OUT,
     complete: () => {
-      // After fly-to, engage per-tick tracking
+      // after fly-to, engage per-tick tracking
       const hpr = new Cesium.HeadingPitchRange(
         0,
         Cesium.Math.toRadians(-90),
@@ -211,17 +197,15 @@ function enterFollowMode(viewer, noradId, tickListenerRef, hudDataRef, setHudDat
   });
 }
 
-/**
- * Enter POV mode: fly to satellite, then track with setView along velocity.
- */
+// enter POV mode: fly to sat, then track with setView along velocity
 function enterPovMode(viewer, noradId, tickListenerRef, hudDataRef, setHudData) {
   const satrec = getSatrec(noradId);
   if (!satrec) return;
 
-  // Disable collision detection for space camera
+  // disable collision detection for space camera
   viewer.scene.screenSpaceCameraController.enableCollisionDetection = false;
 
-  // Get current satellite position for fly-to
+  // get current sat pos for fly-to
   const jsDate = Cesium.JulianDate.toDate(viewer.clock.currentTime);
   const posVel = satellite.propagate(satrec, jsDate);
   if (!posVel.position || !posVel.velocity) return;
@@ -239,7 +223,7 @@ function enterPovMode(viewer, noradId, tickListenerRef, hudDataRef, setHudData) 
     duration: 1.5,
     easingFunction: Cesium.EasingFunction.CUBIC_IN_OUT,
     complete: () => {
-      // After fly-to, engage per-tick POV tracking
+      // after fly-to, engage per-tick POV tracking
       const listener = (clock) => {
         const date = Cesium.JulianDate.toDate(clock.currentTime);
         const pv = satellite.propagate(satrec, date);
@@ -268,7 +252,7 @@ function enterPovMode(viewer, noradId, tickListenerRef, hudDataRef, setHudData) 
           orientation: { direction: dir, up },
         });
 
-        // Update HUD data
+        // update HUD data
         const gd = satellite.eciToGeodetic(pv.position, g);
         const velMag = Math.sqrt(
           pv.velocity.x ** 2 + pv.velocity.y ** 2 + pv.velocity.z ** 2

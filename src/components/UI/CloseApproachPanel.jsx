@@ -54,7 +54,7 @@ export default function CloseApproachPanel() {
     store.setCloseApproachProgress(0);
     store.clearCloseApproachVisualization();
 
-    // Get current sim time from CesiumJS clock via appStore
+    // get current sim time from CesiumJS clock
     const appState = useAppStore.getState();
     const viewerRef = appState.viewerRef;
     let startTime = Date.now();
@@ -62,16 +62,15 @@ export default function CloseApproachPanel() {
       try {
         startTime = window.Cesium.JulianDate.toDate(viewerRef.clock.currentTime).getTime();
       } catch {
-        // fallback to Date.now()
+        // fallback to Date.now
       }
     }
 
-    // Pre-filter on main thread (fast)
+    // pre-filter on main thread (fast)
     const candidates = preFilterCandidates(refSat, satellites, thresholdKm);
 
     if (candidates.length < 500) {
-      // Run on main thread for small candidate sets
-      // Use setTimeout to not block UI during initial render
+      // run on main thread for small sets, setTimeout to avoid blocking UI
       setTimeout(() => {
         const approachResults = findCloseApproaches(refSat.satrec, candidates, {
           thresholdKm,
@@ -84,7 +83,7 @@ export default function CloseApproachPanel() {
         useAnalysisStore.getState().setCloseApproachResults(approachResults);
       }, 0);
     } else {
-      // Offload to Web Worker for large candidate sets
+      // offload to web worker for large candidate sets
       if (workerRef.current) {
         workerRef.current.terminate();
       }
@@ -112,7 +111,7 @@ export default function CloseApproachPanel() {
         workerRef.current = null;
       };
 
-      // Send TLE strings to worker
+      // send TLE strings to worker
       const candidateTles = candidates
         .filter((c) => c.tle1 && c.tle2)
         .map((c) => ({ id: c.id, name: c.name, line1: c.tle1, line2: c.tle2 }));
@@ -131,10 +130,10 @@ export default function CloseApproachPanel() {
       const refSat = satellites.get(detailSatelliteId);
       if (!refSat) return;
 
-      // Select the approach satellite for detail
+      // select approach sat for detail
       useSatelliteStore.getState().setDetailSatelliteId(result.satelliteId);
 
-      // Set visualization data
+      // set viz data
       useAnalysisStore.getState().setCloseApproachVisualization({
         referenceSatId: detailSatelliteId,
         approachSatId: result.satelliteId,
@@ -167,7 +166,7 @@ export default function CloseApproachPanel() {
         color: 'var(--text-primary)',
       }}
     >
-      {/* Header */}
+      {/* header */}
       <div
         className="flex items-center justify-between px-3 py-2"
         style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}
@@ -189,14 +188,14 @@ export default function CloseApproachPanel() {
         </div>
       ) : (
         <>
-          {/* Reference satellite */}
+          {/* ref sat */}
           <div className="px-3 py-2 text-xs opacity-70">
             Reference: <span style={{ color: 'var(--accent)' }}>{refSat.name}</span> ({refSat.id})
           </div>
 
-          {/* Controls */}
+          {/* controls */}
           <div className="px-3 py-2 flex flex-col gap-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-            {/* Threshold slider */}
+            {/* threshold slider */}
             <div className="flex items-center gap-2">
               <label className="text-xs opacity-70 w-20 shrink-0">Threshold</label>
               <input
@@ -212,7 +211,7 @@ export default function CloseApproachPanel() {
               <span className="text-xs w-14 text-right">{thresholdKm} km</span>
             </div>
 
-            {/* Scan duration */}
+            {/* scan duration */}
             <div className="flex items-center gap-2">
               <label className="text-xs opacity-70 w-20 shrink-0">Duration</label>
               <div className="flex gap-1">
@@ -232,7 +231,7 @@ export default function CloseApproachPanel() {
               </div>
             </div>
 
-            {/* Scan button */}
+            {/* scan btn */}
             <button
               className="w-full py-1.5 text-xs font-semibold rounded"
               style={{
@@ -247,7 +246,7 @@ export default function CloseApproachPanel() {
               {computing ? 'Scanning...' : 'Scan for Close Approaches'}
             </button>
 
-            {/* Progress bar */}
+            {/* progress bar */}
             {computing && (
               <div className="w-full h-1 rounded overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
                 <div
@@ -261,7 +260,7 @@ export default function CloseApproachPanel() {
             )}
           </div>
 
-          {/* Results */}
+          {/* results */}
           <div className="flex-1 overflow-y-auto" style={{ minHeight: 0 }}>
             {results.length === 0 && !computing && (
               <div className="px-3 py-4 text-center text-xs opacity-40">

@@ -1,7 +1,7 @@
-// Globe base color doubles as landmass — lighter blue so land is visible
+// globe base color doubles as landmass - lighter blue so land is visible
 export const GLOBE_BASE_COLOR = '#131b2e';
 
-// Bloom settings for tile glow
+// bloom settings for tile glow
 export const BLOOM_CONFIG = {
   enabled: true,
   contrast: 119,
@@ -11,20 +11,20 @@ export const BLOOM_CONFIG = {
   stepSize: 0.5,
 };
 
-// Camera defaults (matching satellitemap.space framing)
+// camera defaults (matching satellitemap.space framing)
 export const DEFAULT_CAMERA = {
   destination: { lon: 0, lat: 20, height: 20_000_000 },
   orientation: { heading: 0, pitch: -90, roll: 0 },
 };
 
-// Deep space starting position for zoom-in reveal
+// deep space start pos for zoom-in reveal
 export const REVEAL_START = {
   destination: { lon: 0, lat: 0, height: 80_000_000 },
 };
 
-export const REVEAL_DURATION = 2.5; // seconds
+export const REVEAL_DURATION = 2.5; // sec
 
-// Globe style configurations
+// globe style configs
 export const GLOBE_STYLES = {
   photo: {
     tileUrl: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
@@ -46,6 +46,6 @@ export const GLOBE_STYLES = {
   },
 };
 
-// Zoom limits (approximate satellitemap.space range)
+// zoom limits (approx satellitemap.space range)
 export const MIN_ZOOM_DISTANCE = 500_000;   // ~500 km
 export const MAX_ZOOM_DISTANCE = 80_000_000; // ~80,000 km

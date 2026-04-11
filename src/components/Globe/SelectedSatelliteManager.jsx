@@ -10,14 +10,9 @@ const ORBIT_REFRESH_MS = 60_000;
 const GROUND_TRACK_POINTS_PER_HALF = 180;
 const EARTH_RADIUS_M = 6_371_000;
 
-/**
- * SelectedSatelliteManager — promotes selected satellites to CesiumJS Entities
- * with pulsing point, name label, full orbit polyline, ground tracks, and footprint.
- *
- * All Cesium objects managed via refs. Component renders null.
- */
+// promotes selected sats to CesiumJS entities (pulsing point, label, orbit, ground tracks, footprint)
 export default function SelectedSatelliteManager() {
-  const entitiesRef = useRef(new Map()); // noradId -> { pointEntityId, orbitEntityId, footprintEntityId, groundTrackIds }
+  const entitiesRef = useRef(new Map()); // noradId -> entity IDs map
   const orbitIntervalRef = useRef(null);
   const unsubRef = useRef(null);
   const unsubLabelsRef = useRef(null);
@@ -29,7 +24,7 @@ export default function SelectedSatelliteManager() {
 
     let prevSelectedIds = new Set(useSatelliteStore.getState().selectedIds);
 
-    // Sync entities with selected IDs
+    // sync entities with selected IDs
     function syncSelection(selectedIds) {
       const added = [];
       const removed = [];
@@ -51,17 +46,17 @@ export default function SelectedSatelliteManager() {
       }
     }
 
-    // Initial sync
+    // init sync
     syncSelection(useSatelliteStore.getState().selectedIds);
 
-    // Subscribe to selection changes
+    // sub to selection changes
     unsubRef.current = useSatelliteStore.subscribe((state) => {
       if (state.selectedIds !== prevSelectedIds) {
         syncSelection(state.selectedIds);
       }
     });
 
-    // Label visibility reactivity
+    // label visibility reactivity
     let prevLabelsVisible = useAppStore.getState().labelsVisible;
     unsubLabelsRef.current = useAppStore.subscribe((state) => {
       if (state.labelsVisible === prevLabelsVisible) return;
@@ -75,7 +70,7 @@ export default function SelectedSatelliteManager() {
       }
     });
 
-    // Visibility toggle reactivity for ground tracks, orbit lines, footprints
+    // visibility toggle reactivity for ground tracks, orbit lines, footprints
     let prevGroundTracksVisible = useAppStore.getState().groundTracksVisible;
     let prevOrbitLinesVisible = useAppStore.getState().orbitLinesVisible;
     let prevFootprintsVisible = useAppStore.getState().footprintsVisible;
@@ -108,7 +103,7 @@ export default function SelectedSatelliteManager() {
       }
     });
 
-    // Periodic orbit + ground track recomputation
+    // periodic orbit + ground track recomputation
     orbitIntervalRef.current = setInterval(() => {
       for (const id of entitiesRef.current.keys()) {
         updateOrbitLine(viewer, id);
@@ -131,9 +126,7 @@ export default function SelectedSatelliteManager() {
   return null;
 }
 
-/**
- * Get current simulation time in milliseconds.
- */
+// get current sim time in ms
 function getSimTimeMs() {
   const viewer = useAppStore.getState().viewerRef;
   return viewer
@@ -141,9 +134,7 @@ function getSimTimeMs() {
     : Date.now();
 }
 
-/**
- * Add Entity for a selected satellite (pulsing point + label + orbit line + ground tracks + footprint).
- */
+// add entity for selected sat (pulsing point + label + orbit + ground tracks + footprint)
 function addEntity(viewer, noradId, entityMap) {
   if (viewer.isDestroyed()) return;
   if (entityMap.has(noradId)) return;
@@ -162,7 +153,7 @@ function addEntity(viewer, noradId, entityMap) {
   const orbitEntityId = `sat-orbit-${noradId}`;
   const footprintEntityId = `footprint-${noradId}`;
 
-  // Pulsing point with label — position read from positionBuffer via CallbackProperty
+  // pulsing point w/ label - pos read from positionBuffer via CallbackProperty
   const positionCallback = new Cesium.CallbackProperty(() => {
     const { positionBuffer, positionCount } = useSatelliteStore.getState();
     if (!positionBuffer) return Cesium.Cartesian3.ZERO;
@@ -181,7 +172,7 @@ function addEntity(viewer, noradId, entityMap) {
     return Cesium.Cartesian3.ZERO;
   }, false);
 
-  // Pulsing pixel size (6-12) via CallbackProperty
+  // pulsing pixel size (6-12) via CallbackProperty
   const pixelSizeCallback = new Cesium.CallbackProperty(() => {
     return Math.sin(Date.now() * 0.005) * 3 + 9;
   }, false);
@@ -212,7 +203,7 @@ function addEntity(viewer, noradId, entityMap) {
     },
   });
 
-  // Orbit polyline
+  // orbit polyline
   const orbitPositions = computeOrbitPositions(sat);
   if (orbitPositions.length > 0) {
     viewer.entities.add({
@@ -226,10 +217,10 @@ function addEntity(viewer, noradId, entityMap) {
     });
   }
 
-  // Ground tracks
+  // ground tracks
   const groundTrackIds = createGroundTrackEntities(viewer, noradId, sat, satColor, groundTracksVisible);
 
-  // Footprint
+  // footprint
   const footprintPositionCallback = new Cesium.CallbackProperty(() => {
     const { positionBuffer, positionCount } = useSatelliteStore.getState();
     if (!positionBuffer) return Cesium.Cartesian3.ZERO;
@@ -239,8 +230,8 @@ function addEntity(viewer, noradId, entityMap) {
       const offset = i * stride;
       if (positionBuffer[offset] === noradId) {
         return Cesium.Cartesian3.fromDegrees(
-          positionBuffer[offset + 2], // lon
-          positionBuffer[offset + 1], // lat
+          positionBuffer[offset + 2],
+          positionBuffer[offset + 1],
           0 // clamped to surface
         );
       }
@@ -257,7 +248,7 @@ function addEntity(viewer, noradId, entityMap) {
       const offset = i * stride;
       if (positionBuffer[offset] === noradId) {
         const altKm = positionBuffer[offset + 3];
-        const h = altKm * 1000; // meters
+        const h = altKm * 1000; // m
         if (h <= 0) return 0;
         const ratio = EARTH_RADIUS_M / (EARTH_RADIUS_M + h);
         return EARTH_RADIUS_M * Math.acos(ratio < 1 ? ratio : 1);
@@ -285,10 +276,7 @@ function addEntity(viewer, noradId, entityMap) {
   entityMap.set(noradId, { pointEntityId, orbitEntityId, footprintEntityId, groundTrackIds });
 }
 
-/**
- * Create ground track polyline entities for past and future segments.
- * Returns array of entity IDs created.
- */
+// create ground track polyline entities for past/future segments, returns entity IDs
 function createGroundTrackEntities(viewer, noradId, sat, satColor, visible) {
   const { pastSegments, futureSegments } = computeGroundTrack(sat);
   const ids = [];
@@ -334,9 +322,7 @@ function createGroundTrackEntities(viewer, noradId, sat, satColor, visible) {
   return ids;
 }
 
-/**
- * Remove Entity for a deselected satellite.
- */
+// remove entity for a deselected sat
 function removeEntity(viewer, noradId, entityMap) {
   if (viewer.isDestroyed()) return;
 
@@ -360,9 +346,7 @@ function removeEntity(viewer, noradId, entityMap) {
   entityMap.delete(noradId);
 }
 
-/**
- * Recompute orbit polyline positions for a satellite.
- */
+// recompute orbit polyline positions for a sat
 function updateOrbitLine(viewer, noradId) {
   if (viewer.isDestroyed()) return;
 
@@ -379,16 +363,14 @@ function updateOrbitLine(viewer, noradId) {
   }
 }
 
-/**
- * Recompute ground track entities for a satellite (remove old, create new).
- */
+// recompute ground track entities for a sat (remove old, create new)
 function updateGroundTracks(viewer, noradId, entityMap) {
   if (viewer.isDestroyed()) return;
 
   const entry = entityMap.get(noradId);
   if (!entry) return;
 
-  // Remove old ground track entities
+  // remove old ground track entities
   for (const gtId of entry.groundTrackIds) {
     const e = viewer.entities.getById(gtId);
     if (e) viewer.entities.remove(e);
@@ -404,10 +386,7 @@ function updateGroundTracks(viewer, noradId, entityMap) {
   entry.groundTrackIds = createGroundTrackEntities(viewer, noradId, sat, satColor, groundTracksVisible);
 }
 
-/**
- * Compute ~360 positions for one full orbit of a satellite.
- * Uses simulation time from CesiumJS Clock.
- */
+// compute ~360 positions for one full orbit, uses sim time from CesiumJS clock
 function computeOrbitPositions(sat) {
   if (!sat.tle1 || !sat.tle2) return [];
 
@@ -439,10 +418,7 @@ function computeOrbitPositions(sat) {
   }
 }
 
-/**
- * Compute ground track segments with antimeridian splitting.
- * Returns { pastSegments, futureSegments } where each is an array of [{lat,lon},...] segments.
- */
+// compute ground track segments with antimeridian splitting
 function computeGroundTrack(sat) {
   const pastSegments = [];
   const futureSegments = [];
@@ -455,23 +431,21 @@ function computeGroundTrack(sat) {
     const halfPeriodMs = (periodMinutes * 60 * 1000) / 2;
     const now = getSimTimeMs();
 
-    // Past: from -halfPeriod to now
+    // past: from -halfPeriod to now
     const pastPoints = propagateTrack(satrec, now - halfPeriodMs, now, GROUND_TRACK_POINTS_PER_HALF);
     splitAtAntimeridian(pastPoints, pastSegments);
 
-    // Future: from now to +halfPeriod
+    // future: from now to +halfPeriod
     const futurePoints = propagateTrack(satrec, now, now + halfPeriodMs, GROUND_TRACK_POINTS_PER_HALF);
     splitAtAntimeridian(futurePoints, futureSegments);
   } catch {
-    // propagation failure
+    // propagation failed
   }
 
   return { pastSegments, futureSegments };
 }
 
-/**
- * Propagate satellite from startMs to endMs, returning array of {lat, lon}.
- */
+// propagate sat from startMs to endMs, returns [{lat, lon}]
 function propagateTrack(satrec, startMs, endMs, numPoints) {
   const points = [];
   for (let i = 0; i <= numPoints; i++) {
@@ -490,10 +464,7 @@ function propagateTrack(satrec, startMs, endMs, numPoints) {
   return points;
 }
 
-/**
- * Split a track into segments at antimeridian crossings.
- * When consecutive longitude difference > 180, start a new segment.
- */
+// split track into segments at antimeridian crossings (lon diff > 180)
 function splitAtAntimeridian(points, segments) {
   if (points.length === 0) return;
 
@@ -502,7 +473,7 @@ function splitAtAntimeridian(points, segments) {
   for (let i = 1; i < points.length; i++) {
     const lonDiff = Math.abs(points[i].lon - points[i - 1].lon);
     if (lonDiff > 180) {
-      // Antimeridian crossing — push current segment, start new one
+      // antimeridian crossing - push current seg, start new one
       if (current.length >= 2) {
         segments.push(current);
       }

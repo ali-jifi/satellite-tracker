@@ -1,10 +1,7 @@
 import { useEffect, useRef } from 'react';
 
-/**
- * Global keyboard shortcut hook with input field guard.
- * Accepts a stable shortcuts map: { key: handler }
- * Ignores shortcuts when activeElement is INPUT/TEXTAREA/contentEditable (except Escape).
- */
+// global keyboard shortcut hook w/ input field guard
+// accepts { key: handler } map, ignores when in INPUT/TEXTAREA/contentEditable (except Escape)
 export default function useKeyboardShortcuts(shortcutsMap) {
   const mapRef = useRef(shortcutsMap);
   mapRef.current = shortcutsMap;
@@ -14,7 +11,7 @@ export default function useKeyboardShortcuts(shortcutsMap) {
       const map = mapRef.current;
       if (!map) return;
 
-      // Guard: ignore shortcuts when typing in input fields (except Escape)
+      // skip shortcuts when typing in inputs (except Escape)
       const tag = document.activeElement?.tagName;
       const isEditable =
         tag === 'INPUT' ||

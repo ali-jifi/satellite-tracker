@@ -2,13 +2,10 @@ import useKeyboardShortcuts from '../../hooks/useKeyboardShortcuts';
 import useAppStore from '../../stores/appStore';
 import useSatelliteStore from '../../stores/satelliteStore';
 
-/**
- * Pure side-effect component -- renders null.
- * Binds all global keyboard shortcuts.
- */
+// pure side-effect component, renders null -- binds all global keyboard shortcuts
 export default function KeyboardShortcuts() {
   useKeyboardShortcuts({
-    // Space: open search / menu drawer and focus search input
+    // space: open search/menu drawer & focus search input
     ' ': () => {
       const { menuOpen, toggleMenu } = useAppStore.getState();
       if (!menuOpen) toggleMenu();
@@ -17,7 +14,7 @@ export default function KeyboardShortcuts() {
       }, 100);
     },
 
-    // Camera modes: 1=free, 2=follow, 3=pov, 4=skydome
+    // camera modes: 1=free, 2=follow, 3=pov, 4=skydome
     '1': () => useAppStore.getState().setCameraMode('free'),
     '2': () => {
       const detailId = useSatelliteStore.getState().detailSatelliteId;
@@ -32,14 +29,14 @@ export default function KeyboardShortcuts() {
       if (observer) useAppStore.getState().setCameraMode('skydome');
     },
 
-    // Overlay toggles
+    // overlay toggles
     'g': () => useAppStore.getState().toggleGroundTracks(),
     'o': () => useAppStore.getState().toggleOrbitLines(),
     'f': () => useAppStore.getState().toggleFootprints(),
     'l': () => useAppStore.getState().toggleLabelsVisible(),
     'd': () => useAppStore.getState().toggleDebrisVisible(),
 
-    // Escape: multi-purpose exit (camera > selection > panels)
+    // esc: multi-purpose exit (camera > selection > panels)
     'Escape': () => {
       const app = useAppStore.getState();
       const sat = useSatelliteStore.getState();
@@ -55,7 +52,7 @@ export default function KeyboardShortcuts() {
       }
     },
 
-    // Bookmarks
+    // bookmarks
     'b': () => {
       const detailId = useSatelliteStore.getState().detailSatelliteId;
       if (detailId != null) {
@@ -63,7 +60,7 @@ export default function KeyboardShortcuts() {
       }
     },
     'n': () => {
-      // Next bookmark -- filter out stale IDs not in current catalog
+      // next bookmark, filter out stale IDs not in catalog
       const { bookmarks } = useAppStore.getState();
       const { satellites, detailSatelliteId, setDetailSatelliteId } = useSatelliteStore.getState();
       const valid = bookmarks.filter((id) => satellites.has(id));
@@ -73,7 +70,7 @@ export default function KeyboardShortcuts() {
       setDetailSatelliteId(valid[next]);
     },
     'p': () => {
-      // Previous bookmark -- filter out stale IDs not in current catalog
+      // prev bookmark, filter out stale IDs not in catalog
       const { bookmarks } = useAppStore.getState();
       const { satellites, detailSatelliteId, setDetailSatelliteId } = useSatelliteStore.getState();
       const valid = bookmarks.filter((id) => satellites.has(id));
@@ -86,7 +83,7 @@ export default function KeyboardShortcuts() {
     // HUD toggle (POV mode)
     'h': () => useAppStore.getState().toggleHud(),
 
-    // Shortcut help overlay (? key = Shift+/)
+    // shortcut help overlay (? = Shift+/)
     '?': () => useAppStore.getState().toggleShortcutHelp(),
   });
 

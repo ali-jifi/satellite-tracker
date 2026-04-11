@@ -40,7 +40,7 @@ export default function ReentryPanel() {
 
     setComputing(true);
 
-    // Use requestAnimationFrame to avoid blocking UI
+    // rAF to avoid blocking UI
     const id = requestAnimationFrame(() => {
       const predictions = scanAllReentries(satelliteArray);
       setResults(predictions);
@@ -62,7 +62,7 @@ export default function ReentryPanel() {
         borderRadius: 8,
       }}
     >
-      {/* Header */}
+      {/* header */}
       <div className="flex items-center justify-between px-3 py-2 flex-shrink-0">
         <div className="flex items-center gap-2">
           <Flame size={14} style={{ color: 'var(--accent)' }} />
@@ -82,7 +82,7 @@ export default function ReentryPanel() {
         </button>
       </div>
 
-      {/* Content */}
+      {/* content */}
       <div className="overflow-y-auto px-3 pb-2.5 flex-1 min-h-0">
         {computing && results.length === 0 ? (
           <div className="flex items-center justify-center py-8">
@@ -109,7 +109,7 @@ export default function ReentryPanel() {
                 className="w-full text-left px-2.5 py-2 rounded-md hover:bg-[var(--glass-hover)] transition-colors"
                 onClick={() => setDetailSatelliteId(entry.satelliteId)}
               >
-                {/* Name row */}
+                {/* name row */}
                 <div className="flex items-center justify-between gap-2 mb-0.5">
                   <span
                     className="text-[11px] font-semibold truncate"
@@ -125,7 +125,7 @@ export default function ReentryPanel() {
                   </span>
                 </div>
 
-                {/* Prediction row */}
+                {/* prediction row */}
                 <div className="flex items-center gap-2 mb-0.5">
                   <span
                     className="text-[10px] tabular-nums"
@@ -146,7 +146,7 @@ export default function ReentryPanel() {
                   />
                 </div>
 
-                {/* Details row */}
+                {/* details row */}
                 <div className="flex items-center gap-3">
                   <span
                     className="text-[9px] tabular-nums"

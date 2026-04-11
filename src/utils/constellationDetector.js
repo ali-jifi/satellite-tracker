@@ -1,8 +1,6 @@
 import * as satellite from 'satellite.js';
 
-/**
- * Known constellation patterns — regex-based name matching with minimum count thresholds.
- */
+// known constellation patterns -- regex name matching w/ min count thresholds
 export const CONSTELLATION_PATTERNS = [
   { name: 'Starlink', pattern: /^STARLINK/i, minCount: 50 },
   { name: 'OneWeb', pattern: /^ONEWEB/i, minCount: 5 },
@@ -22,24 +20,21 @@ const DEG2RAD = Math.PI / 180;
 const RAD2DEG = 180 / Math.PI;
 const EARTH_RADIUS_KM = 6371;
 
-/**
- * Compute active/decayed/deorbiting stats for a group of satellites.
- * - active: perigee > 200km AND (no satrec OR ndot <= 0.001)
- * - decayed: perigee < 200km
- * - deorbiting: perigee >= 200km but ndot > 0.001
- */
+// compute active/decayed/deorbiting stats for a group of sats
+// active: perigee > 200km AND (no satrec OR ndot <= 0.001)
+// decayed: perigee < 200km
+// deorbiting: perigee >= 200km but ndot > 0.001
 function computeConstellationStats(satellites) {
   let active = 0;
   let decayed = 0;
   let deorbiting = 0;
 
   for (const sat of satellites) {
-    // Use GP JSON perigee field if available, else derive from satrec
+    // use GP JSON perigee field if available, else derive from satrec
     let perigee = sat.perigee;
     if (perigee == null && sat.satrec) {
-      // satrec.altp is perigee altitude in Earth radii (satellite.js internals)
-      // Actually satrec stores semi-major axis; perigee = a*(1-e) - 1 in earth radii
-      // But we already have sat.perigee from GP JSON, so this is a fallback
+      // satrec stores semi-major axis; perigee = a*(1-e) - 1 in earth radii
+      // sat.perigee from GP JSON is primary, this is fallback
       const a = sat.satrec.a; // earth radii
       const e = sat.satrec.ecco;
       if (a && e != null) {
@@ -61,10 +56,8 @@ function computeConstellationStats(satellites) {
   return { active, decayed, deorbiting, total: satellites.length };
 }
 
-/**
- * Detect constellations from a satellite array by matching name patterns.
- * Returns array of { name, satellites, stats } sorted by total descending.
- */
+// detect constellations from sat array by matching name patterns
+// returns array of { name, satellites, stats } sorted by total desc
 export function detectConstellations(satelliteArray) {
   const groups = new Map();
 
@@ -94,26 +87,18 @@ export function detectConstellations(satelliteArray) {
     });
   }
 
-  // Sort by total count descending
+  // sort by total count desc
   results.sort((a, b) => b.stats.total - a.stats.total);
   return results;
 }
 
-/**
- * Compute approximate coverage percentage for a constellation.
- * Uses a coarse 10-degree lat/lon grid (648 cells) and checks if any satellite
- * has elevation > threshold from each cell center.
- *
- * @param {object[]} satellites - Array of satellite objects with satrec
- * @param {number} [elevationThresholdDeg=5] - Minimum elevation in degrees
- * @param {Date} [time] - Time to propagate to (default: now)
- * @returns {number} Coverage percentage (0-100)
- */
+// compute approx coverage % for a constellation
+// uses coarse 10deg lat/lon grid (648 cells), checks if any sat has el > threshold from each cell center
 export function computeCoverage(satellites, elevationThresholdDeg = 5, time = null) {
   const now = time || new Date();
   const gmst = satellite.gstime(now);
 
-  // Pre-propagate all satellite positions to ECI, then convert to ECF
+  // pre-propagate all sat positions to ECI, then convert to ECF
   const satEcfs = [];
   for (const sat of satellites) {
     if (!sat.satrec) continue;
@@ -132,7 +117,7 @@ export function computeCoverage(satellites, elevationThresholdDeg = 5, time = nu
   let coveredCells = 0;
   let totalCells = 0;
 
-  // 10-degree grid: lat -90 to 80 (step 10), lon -180 to 170 (step 10)
+  // 10deg grid: lat -90 to 80 (step 10), lon -180 to 170 (step 10)
   for (let lat = -90; lat <= 80; lat += 10) {
     for (let lon = -180; lon <= 170; lon += 10) {
       totalCells++;
@@ -165,10 +150,8 @@ export function computeCoverage(satellites, elevationThresholdDeg = 5, time = nu
   return totalCells > 0 ? (coveredCells / totalCells) * 100 : 0;
 }
 
-/**
- * Hardcoded historical growth milestones for major constellations.
- * Used for Chart.js line chart rendering.
- */
+// hardcoded historical growth milestones for major constellations
+// used for Chart.js line chart rendering
 export const GROWTH_MILESTONES = {
   'Starlink': [
     { date: '2019-05-24', count: 60 },

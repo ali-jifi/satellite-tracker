@@ -121,7 +121,7 @@ export default function NotificationSettings() {
             onToggle={() => updatePref('photobombEnabled', !notificationPrefs.photobombEnabled)}
           />
 
-          {/* Lead time selector */}
+          {/* lead time selector */}
           <div className="mt-3">
             <span className="text-[10px] block mb-2" style={{ color: 'var(--text-secondary)' }}>
               Alert lead time

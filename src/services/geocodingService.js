@@ -1,10 +1,6 @@
 const NOMINATIM_BASE = 'https://nominatim.openstreetmap.org/search';
 
-/**
- * Search for cities/places using the Nominatim geocoding API.
- * @param {string} query - The search term (city name, address, etc.)
- * @returns {Promise<Array<{label: string, lat: number, lon: number}>>}
- */
+// search cities/places via Nominatim geocoding API
 export async function searchCity(query) {
   if (!query || query.trim().length < 2) return [];
 

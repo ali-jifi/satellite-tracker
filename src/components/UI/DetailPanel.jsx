@@ -11,9 +11,9 @@ const UPDATE_MS = 1000;
 const DEG2RAD = Math.PI / 180;
 const RAD2DEG = 180 / Math.PI;
 
-// Recompute passes if sim time drifts more than 1 hour from last computation
+// recompute passes if sim time drifts >1hr from last computation
 const RECOMPUTE_DRIFT_MS = 3600000;
-// Recompute every 5 minutes of sim time
+// recompute every 5min of sim time
 const RECOMPUTE_INTERVAL_MS = 300000;
 
 const COMPASS_DIRS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
@@ -76,10 +76,7 @@ function formatLon(deg) {
   return `${abs}\u00B0 ${deg >= 0 ? 'E' : 'W'}`;
 }
 
-/**
- * Compute range (km) and elevation (deg) from observer to satellite.
- * Uses satellite.js ecfToLookAngles.
- */
+// compute range (km) & elevation (deg) from observer to sat via satellite.js ecfToLookAngles
 function computeLookAngles(sat, simTime) {
   const observer = useAppStore.getState().observerLocation;
   if (!observer || !sat.satrec) return null;
@@ -110,7 +107,7 @@ function getSimTime() {
   const viewer = useAppStore.getState().viewerRef;
   if (viewer && viewer.clock) {
     const julianDate = viewer.clock.currentTime;
-    // Convert CesiumJS JulianDate to JS Date
+    // convert CesiumJS JulianDate to JS Date
     const epoch = window.Cesium
       ? window.Cesium.JulianDate.toDate(julianDate)
       : new Date();
@@ -172,10 +169,7 @@ function useLiveTelemetry(satId, sat) {
   return telemetry;
 }
 
-/**
- * Hook to compute and manage pass predictions for a satellite.
- * Recomputes on satellite change, observer change, and sim time drift.
- */
+// hook to compute/manage pass predictions, recomputes on sat/observer/sim-time-drift change
 function usePassPredictions(satId, sat) {
   const [passes, setPasses] = useState(null);
   const [computing, setComputing] = useState(false);
@@ -211,7 +205,7 @@ function usePassPredictions(satId, sat) {
     setComputing(false);
   }, [sat, observerLocation]);
 
-  // Recompute when satellite or observer changes
+  // recompute when sat or observer changes
   useEffect(() => {
     if (satId != null && sat && observerLocation) {
       computePasses();
@@ -221,7 +215,7 @@ function usePassPredictions(satId, sat) {
     }
   }, [satId, sat, observerLocation, computePasses]);
 
-  // Periodic recomputation check (every 10 seconds wall time)
+  // periodic recomputation check (every 10s wall time)
   useEffect(() => {
     if (!satId || !sat || !observerLocation) return;
 
@@ -242,9 +236,7 @@ function usePassPredictions(satId, sat) {
   return { passes, computing };
 }
 
-/**
- * Hook to provide a ticking countdown value based on simulation time.
- */
+// hook providing ticking countdown based on sim time
 function useSimCountdown(passes) {
   const [countdown, setCountdown] = useState(null);
 
@@ -258,10 +250,10 @@ function useSimCountdown(passes) {
       const simNow = getSimTime();
       const simMs = simNow.getTime();
 
-      // Check if currently overhead
+      // check if currently overhead
       for (const pass of passes) {
         if (simMs >= pass.start.getTime() && simMs <= pass.end.getTime()) {
-          // Currently in pass
+          // currently in pass
           const currentLook = computeLookAnglesForPass(pass, simNow);
           setCountdown({
             type: 'overhead',
@@ -273,7 +265,7 @@ function useSimCountdown(passes) {
         }
       }
 
-      // Find next future pass
+      // find next future pass
       const nextPass = passes.find((p) => p.start.getTime() > simMs);
       if (nextPass) {
         setCountdown({
@@ -294,7 +286,7 @@ function useSimCountdown(passes) {
   return countdown;
 }
 
-/** Approximate elevation during a pass at a given time (linear interpolation) */
+// approx elevation during a pass at given time (linear interp)
 function computeLookAnglesForPass(pass, simTime) {
   const t = simTime.getTime();
   const midT = pass.maxElevationTime.getTime();
@@ -304,7 +296,7 @@ function computeLookAnglesForPass(pass, simTime) {
   if (t <= startT) return 0;
   if (t >= endT) return 0;
 
-  // Simple approximation: parabolic between start/max/end
+  // simple parabolic approx between start/max/end
   if (t <= midT) {
     const frac = (t - startT) / (midT - startT);
     return pass.maxElevation * frac;
@@ -448,7 +440,7 @@ export default function DetailPanel() {
 
   if (!sat) return null;
 
-  // Eccentricity from satrec
+  // eccentricity from satrec
   const eccentricity = sat.satrec ? sat.satrec.ecco : null;
 
   return (
@@ -463,7 +455,7 @@ export default function DetailPanel() {
       }}
     >
       <div className="px-3 py-2.5">
-        {/* Header */}
+        {/* header */}
         <div className="flex items-start justify-between gap-2 mb-1">
           <div className="min-w-0">
             <div
@@ -538,7 +530,7 @@ export default function DetailPanel() {
           </div>
         </div>
 
-        {/* Position */}
+        {/* position */}
         <SectionLabel>Position</SectionLabel>
         <DataRow label="Lat" value={telemetry ? formatLat(telemetry.lat) : '--'} />
         <DataRow label="Lon" value={telemetry ? formatLon(telemetry.lon) : '--'} />
@@ -547,7 +539,7 @@ export default function DetailPanel() {
           value={telemetry ? `${telemetry.alt.toFixed(1)} km` : '--'}
         />
 
-        {/* Telemetry */}
+        {/* telemetry */}
         <SectionLabel>Telemetry</SectionLabel>
         <DataRow
           label="Velocity"
@@ -574,7 +566,7 @@ export default function DetailPanel() {
           }
         />
 
-        {/* Next Pass */}
+        {/* next pass */}
         <SectionLabel>Next Pass</SectionLabel>
         {!observerLocation ? (
           <div
@@ -597,7 +589,7 @@ export default function DetailPanel() {
           </>
         )}
 
-        {/* Orbit Data */}
+        {/* orbit data */}
         <SectionLabel>Orbit</SectionLabel>
         <DataRow
           label="Inclination"
@@ -620,7 +612,7 @@ export default function DetailPanel() {
           value={sat.perigee != null ? `${sat.perigee.toFixed(1)} km` : 'N/A'}
         />
 
-        {/* Object Info */}
+        {/* object info */}
         <SectionLabel>Object</SectionLabel>
         <DataRow label="Launch" value={sat.launchDate || 'N/A'} />
         <DataRow label="Country" value={sat.countryCode || 'N/A'} />

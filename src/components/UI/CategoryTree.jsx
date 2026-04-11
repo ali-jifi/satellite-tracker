@@ -5,7 +5,7 @@ import useSatelliteStore from '../../stores/satelliteStore';
 import { CATEGORY_COLORS } from '../../utils/colorModes.js';
 import SatelliteCard from './SatelliteCard';
 
-// Human-readable display names for CelesTrak groups
+// display names for CelesTrak groups
 const CATEGORY_DISPLAY = {
   'active': 'Active Satellites',
   'stations': 'Space Stations',
@@ -62,7 +62,7 @@ function CategoryNode({ category, satellites, activeFilter, onSolo, onClearFilte
   const count = satellites.length;
   const isSolo = activeFilter?.type === 'category' && activeFilter?.value === category;
 
-  // Group by country
+  // group by country
   const byCountry = useMemo(() => {
     const map = new Map();
     for (const sat of satellites) {
@@ -70,7 +70,7 @@ function CategoryNode({ category, satellites, activeFilter, onSolo, onClearFilte
       if (!map.has(cc)) map.set(cc, []);
       map.get(cc).push(sat);
     }
-    // Sort countries by count desc
+    // sort countries by count desc
     return [...map.entries()].sort((a, b) => b[1].length - a[1].length);
   }, [satellites]);
 
@@ -113,7 +113,7 @@ function CategoryNode({ category, satellites, activeFilter, onSolo, onClearFilte
 
   return (
     <div className="mb-0.5">
-      {/* Category header */}
+      {/* category header */}
       <div
         className={`flex items-center gap-1.5 px-2 py-1.5 rounded cursor-pointer transition-colors duration-100 ${
           isSolo ? 'bg-[var(--accent-glow)]' : 'hover:bg-[var(--glass-hover)]'
@@ -156,7 +156,7 @@ function CategoryNode({ category, satellites, activeFilter, onSolo, onClearFilte
         </button>
       </div>
 
-      {/* Expanded: country groups */}
+      {/* expanded: country groups */}
       {expanded && (
         <div className="ml-4 mt-0.5">
           {byCountry.map(([cc, sats]) => {
@@ -195,7 +195,7 @@ function CategoryNode({ category, satellites, activeFilter, onSolo, onClearFilte
                   </button>
                 </div>
 
-                {/* Satellite list with virtual scrolling for large sets */}
+                {/* sat list w/ virtual scroll for large sets */}
                 {isCountryExpanded && (
                   <CountrySatelliteList
                     satellites={sats}
@@ -292,7 +292,7 @@ export default function CategoryTree() {
   const setFilter = useSatelliteStore((s) => s.setFilter);
   const clearFilter = useSatelliteStore((s) => s.clearFilter);
 
-  // Build sorted category list with satellite arrays
+  // build sorted category list w/ sat arrays
   const categories = useMemo(() => {
     const result = [];
     for (const [cat, ids] of categoryIndex.entries()) {
@@ -305,14 +305,14 @@ export default function CategoryTree() {
         result.push({ category: cat, satellites: sats });
       }
     }
-    // Sort by count desc
+    // sort by count desc
     result.sort((a, b) => b.satellites.length - a.satellites.length);
     return result;
   }, [categoryIndex, satellites]);
 
   return (
     <div>
-      {/* Header */}
+      {/* header */}
       <div className="flex items-center justify-between mb-2">
         <h3
           className="text-[10px] tracking-[0.2em] uppercase"
@@ -331,7 +331,7 @@ export default function CategoryTree() {
         )}
       </div>
 
-      {/* Tree */}
+      {/* tree */}
       <div className="space-y-0">
         {categories.map(({ category, satellites: sats }) => (
           <CategoryNode

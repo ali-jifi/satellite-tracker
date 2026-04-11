@@ -1,11 +1,5 @@
-/**
- * Space-Track.org api Service
- *
- * this service handles auth and data fetching from Space-Track.org
- *
- * use a vite proxy to avoid cors issues
- * requests to /api/spacetrack are proxied to https://www.space-track.org due to development cors restrictions
- */
+// Space-Track.org API service, handles auth and data fetching
+// uses vite proxy (/api/spacetrack -> https://www.space-track.org) to avoid CORS
 
 const SPACE_TRACK_BASE_URL = '/api/spacetrack';
 
@@ -15,25 +9,20 @@ class SpaceTrackService {
     this.password = null;
   }
 
-  /**
-   *set creds for Space-Track.org auth
-   */
+  // set creds for Space-Track.org auth
   setCredentials(username, password) {
     this.username = username;
     this.password = password;
   }
 
-  /**
-   *auth with Space-Track.org using cookie-based auth
-   *Space-Track.org requires POST to /ajaxauth/login with identity and password
-   */
+  // auth w/ Space-Track.org via cookie-based POST to /ajaxauth/login
   async login() {
     if (!this.username || !this.password) {
       throw new Error('Space-Track credentials not set. Please set credentials first.');
     }
 
     try {
-      //use /ajaxauth/login for authentication
+      // use /ajaxauth/login for auth
       const response = await fetch(`${SPACE_TRACK_BASE_URL}/ajaxauth/login`, {
         method: 'POST',
         headers: {
@@ -43,14 +32,14 @@ class SpaceTrackService {
           identity: this.username,
           password: this.password,
         }),
-        credentials: 'include', //include cookies in requests
+        credentials: 'include', // include cookies in reqs
       });
 
       if (!response.ok) {
         throw new Error('Authentication failed. Please check your username and password.');
       }
 
-      //test authentication by fetching iss data
+      // test auth by fetching ISS data
       await this.getTLEsByNoradIds([25544]);
       return true;
     } catch (error) {
@@ -59,17 +48,12 @@ class SpaceTrackService {
     }
   }
 
-  /**
-   *build auth URL with creds
-   */
+  // build auth URL w/ creds
   buildAuthUrl(query) {
     return `${SPACE_TRACK_BASE_URL}${query}`;
   }
 
-  /**
-   *make authenticated request to Space-Track.org
-   *uses cookie-based auth, send cookies automatically with credentials: 'include'
-   */
+  // make auth'd request to Space-Track.org, sends cookies automatically
   async makeAuthenticatedRequest(query) {
     if (!this.username || !this.password) {
       throw new Error('Credentials not set');
@@ -80,7 +64,7 @@ class SpaceTrackService {
 
       const response = await fetch(authUrl, {
         method: 'GET',
-        credentials: 'include', //send cookies with request
+        credentials: 'include', // send cookies w/ req
       });
 
       if (!response.ok) {
@@ -98,10 +82,7 @@ class SpaceTrackService {
     }
   }
 
-  /**
-   *fetch tle data for specific sats
-   * @param {Array} noradIds NORAD catalog ids array
-   */
+  // fetch TLE data for specific sats by NORAD IDs
   async getTLEsByNoradIds(noradIds) {
     try {
       const ids = noradIds.join(',');
@@ -115,9 +96,7 @@ class SpaceTrackService {
     }
   }
 
-  /**
-   *fetch tle data for all active sats (large dataset)
-   */
+  // fetch TLE data for all active sats (large dataset)
   async getAllActiveTLEs(limit = 100) {
     try {
       const query = `/class/gp/decay_date/null-val/orderby/NORAD_CAT_ID/limit/${limit}/format/json`;
@@ -130,16 +109,14 @@ class SpaceTrackService {
     }
   }
 
-  /**
-   *fetch tle data by category
-   */
+  // fetch TLE data by category
   async getTLEsByCategory(category, limit = 50) {
     try {
       let query;
 
       switch(category) {
         case 'station':
-          //iss, tiangong, etc, only active stations (decay_date = null)
+          // ISS, tiangong, etc - only active stations (decay_date = null)
           query = `/class/gp/OBJECT_TYPE/PAYLOAD/OBJECT_NAME/~~ISS,TIANHE/decay_date/null-val/orderby/NORAD_CAT_ID/limit/${limit}/format/json`;
           break;
         case 'starlink':
@@ -163,9 +140,7 @@ class SpaceTrackService {
     }
   }
 
-  /**
-   *parse Space-Track.org data into format
-   */
+  // parse Space-Track.org data into standard format
   parseSpaceTrackData(data) {
     if (!Array.isArray(data)) {
       return [];
@@ -173,7 +148,7 @@ class SpaceTrackService {
 
     return data
       .filter(item => {
-        //filter out sats with missing/invalid tle data
+        // filter out sats w/ missing/invalid TLE data
         return item &&
                item.NORAD_CAT_ID &&
                item.OBJECT_NAME &&
@@ -193,9 +168,7 @@ class SpaceTrackService {
       }));
   }
 
-  /**
-   *determine sat category from name
-   */
+  // determine sat category from name
   determineCategory(name) {
     const upperName = name.toUpperCase();
 
@@ -218,29 +191,27 @@ class SpaceTrackService {
     return 'other';
   }
 
-  /**
-   *get popular/interesting sats
-   */
+  // get popular/interesting sats
   async getPopularSatellites() {
     const popularNoradIds = [
-      25544, //iss, ZARYA
-      48274, //tianhe, chinese space station core module
-      20580, //hst, Hubble Space Telescope
-      43013, //starlink-30
-      28654, //noaa 18
-      33591, //noaa 19
-      43689, //gps biir-2, prn 13
-      40294, //goes 16
-      41866, //goess 17
-      47964, //starlink-1600
-      47967, //starlink-1601
+      25544, // ISS (ZARYA)
+      48274, // tianhe (CSS core module)
+      20580, // HST (hubble)
+      43013, // starlink-30
+      28654, // NOAA 18
+      33591, // NOAA 19
+      43689, // GPS BIIR-2 PRN 13
+      40294, // GOES 16
+      41866, // GOES 17
+      47964, // starlink-1600
+      47967, // starlink-1601
     ];
 
     return await this.getTLEsByNoradIds(popularNoradIds);
   }
 }
 
-//create singleton instance
+// singleton instance
 const spaceTrackService = new SpaceTrackService();
 
 export default spaceTrackService;

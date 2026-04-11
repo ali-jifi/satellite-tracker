@@ -3,7 +3,7 @@ import * as Cesium from 'cesium';
 import { Rewind, Play, Pause, FastForward, Radio } from 'lucide-react';
 import useAppStore from '../../stores/appStore';
 
-// Logarithmic mapping for speed slider (0.5x - 100x)
+// log mapping for speed slider (0.5x - 100x)
 const MIN_SPEED = 0.5;
 const MAX_SPEED = 100;
 const LOG_MIN = Math.log(MIN_SPEED);
@@ -17,7 +17,7 @@ function sliderToSpeed(val) {
   return Math.exp(LOG_MIN + (val / 100) * (LOG_MAX - LOG_MIN));
 }
 
-// Timeline range: -12h to +12h from wall-clock "now"
+// timeline range: -12h to +12h from wall-clock now
 const TIMELINE_RANGE_MS = 12 * 60 * 60 * 1000;
 
 function useDraggable(initialX, initialY) {
@@ -79,13 +79,13 @@ export default function TimeWidget() {
 
   const wallNowRef = useRef(Date.now());
 
-  // Position: bottom-center
+  // position: bottom-center
   const { pos, onPointerDown, onPointerMove, onPointerUp } = useDraggable(
     Math.max(0, (window.innerWidth - 420) / 2),
     window.innerHeight - 110
   );
 
-  // Sync clock tick -> time display + scrubber
+  // sync clock tick -> time display + scrubber
   useEffect(() => {
     if (!viewerRef) return;
 
@@ -96,14 +96,14 @@ export default function TimeWidget() {
       setUtcStr(formatUTC(simDate));
       setLocalStr(formatLocal(simDate));
 
-      // Update scrubber position
+      // update scrubber position
       const wallNow = Date.now();
       wallNowRef.current = wallNow;
       const diff = simDate.getTime() - wallNow;
       const pct = ((diff + TIMELINE_RANGE_MS) / (2 * TIMELINE_RANGE_MS)) * 100;
       setScrubberValue(Math.max(0, Math.min(100, pct)));
 
-      // Live check: within 2 seconds of real time and speed ~1x forward
+      // live check: within 2s of real time and speed ~1x fwd
       const isNearLive = Math.abs(diff) < 2000 && Math.abs(clock.multiplier - 1) < 0.1;
       setIsLive(isNearLive);
     }
@@ -116,7 +116,7 @@ export default function TimeWidget() {
     };
   }, [viewerRef]);
 
-  // Initialize clock on mount
+  // init clock on mount
   useEffect(() => {
     if (!viewerRef) return;
     const clock = viewerRef.clock;
@@ -191,7 +191,7 @@ export default function TimeWidget() {
         userSelect: 'none',
       }}
     >
-      {/* Drag handle */}
+      {/* drag handle */}
       <div
         className="w-full flex justify-center py-1 cursor-grab active:cursor-grabbing"
         onPointerDown={onPointerDown}
@@ -201,9 +201,9 @@ export default function TimeWidget() {
         <div className="w-10 h-1 rounded-full bg-white/20" />
       </div>
 
-      {/* Row 1: Controls + Time */}
+      {/* row 1: controls + time */}
       <div className="flex items-center gap-1 px-3 pb-1">
-        {/* Transport controls */}
+        {/* transport controls */}
         <div className="flex items-center gap-0.5">
           <button
             onClick={handleRewind}
@@ -240,7 +240,7 @@ export default function TimeWidget() {
           </button>
         </div>
 
-        {/* Live button */}
+        {/* live btn */}
         <button
           onClick={handleLive}
           className="px-2 py-0.5 rounded-full text-[9px] font-semibold tracking-wider uppercase transition-colors"
@@ -254,10 +254,10 @@ export default function TimeWidget() {
           Live
         </button>
 
-        {/* Spacer */}
+        {/* spacer */}
         <div className="flex-1" />
 
-        {/* Time display */}
+        {/* time display */}
         <div className="text-right leading-tight">
           <div className="text-xs tabular-nums" style={{ color: 'var(--text-primary)' }}>
             {utcStr}
@@ -268,9 +268,9 @@ export default function TimeWidget() {
         </div>
       </div>
 
-      {/* Row 2: Scrubber + Speed */}
+      {/* row 2: scrubber + speed */}
       <div className="flex items-center gap-2 px-3 pb-2">
-        {/* Timeline scrubber */}
+        {/* timeline scrubber */}
         <input
           type="range"
           min="0"
@@ -283,7 +283,7 @@ export default function TimeWidget() {
           style={{ accentColor: '#38f3bf' }}
         />
 
-        {/* Speed slider */}
+        {/* speed slider */}
         <div className="flex items-center gap-1">
           <input
             type="range"

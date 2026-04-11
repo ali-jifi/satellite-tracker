@@ -34,7 +34,7 @@ function GrowthChart({ constellationName, currentCount }) {
     const milestones = GROWTH_MILESTONES[constellationName] || [];
     const data = [...milestones.map((m) => ({ x: m.date, y: m.count }))];
 
-    // Append current live count as latest point
+    // append current live count as latest point
     const today = new Date().toISOString().split('T')[0];
     if (currentCount != null) {
       data.push({ x: today, y: currentCount });
@@ -113,10 +113,10 @@ export default function ConstellationDashboard() {
   const [coverageMap, setCoverageMap] = useState({});
   const [coverageComputing, setCoverageComputing] = useState(new Set());
 
-  // Detect constellations when panel opens
+  // detect constellations when panel opens
   useEffect(() => {
     if (!isOpen) {
-      // Clear highlighting when panel closes
+      // clear highlighting when panel closes
       setHighlighted(null);
       setConstellationData(null);
       return;
@@ -132,13 +132,13 @@ export default function ConstellationDashboard() {
     setCoverageMap({});
   }, [isOpen, setConstellationData, setHighlighted]);
 
-  // Compute coverage lazily for a constellation
+  // compute coverage lazily per constellation
   const requestCoverage = useCallback(
     (name, satellites) => {
       if (coverageMap[name] != null || coverageComputing.has(name)) return;
       setCoverageComputing((prev) => new Set(prev).add(name));
 
-      // Run async to avoid blocking UI
+      // async to avoid blocking UI
       setTimeout(() => {
         const pct = computeCoverage(satellites);
         setCoverageMap((prev) => ({ ...prev, [name]: pct }));
@@ -163,7 +163,7 @@ export default function ConstellationDashboard() {
 
   if (!isOpen) return null;
 
-  // Summary stats
+  // summary stats
   const totalConstellations = constellations.length;
   const totalSatellites = constellations.reduce((s, c) => s + c.stats.total, 0);
   const totalActive = constellations.reduce((s, c) => s + c.stats.active, 0);
@@ -182,7 +182,7 @@ export default function ConstellationDashboard() {
       }}
     >
       <div className="px-3 py-2.5">
-        {/* Header */}
+        {/* header */}
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <Satellite size={14} style={{ color: 'var(--accent)' }} />
@@ -202,7 +202,7 @@ export default function ConstellationDashboard() {
           </button>
         </div>
 
-        {/* Summary stats */}
+        {/* summary stats */}
         <div
           className="flex gap-4 mb-3 pb-2"
           style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
@@ -242,14 +242,14 @@ export default function ConstellationDashboard() {
           </div>
         </div>
 
-        {/* Constellation list */}
+        {/* constellation list */}
         <div className="space-y-[2px]">
           {constellations.map((c) => {
             const isSelected = selectedName === c.name;
             const coverage = coverageMap[c.name];
             const computing = coverageComputing.has(c.name);
 
-            // Request coverage computation when visible
+            // request coverage computation when visible
             if (coverage == null && !computing) {
               requestCoverage(c.name, c.satellites);
             }
@@ -302,7 +302,7 @@ export default function ConstellationDashboard() {
           })}
         </div>
 
-        {/* Growth chart for selected constellation */}
+        {/* growth chart for selected constellation */}
         {selectedConstellation && (
           <div className="mt-3 pt-2" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
             <div

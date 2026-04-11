@@ -1,6 +1,6 @@
 import * as satellite from 'satellite.js';
 
-/** @type {Map<number, object>} NORAD ID -> satrec */
+// NORAD ID -> satrec cache
 const satrecCache = new Map();
 
 self.onmessage = function (e) {
@@ -21,10 +21,7 @@ self.onmessage = function (e) {
   }
 };
 
-/**
- * Initialize satrec cache from TLE data.
- * @param {{ satellites: Array<{ id: number, tle1: string, tle2: string }> }} data
- */
+// init satrec cache from TLE data
 function handleInit(data) {
   satrecCache.clear();
   let count = 0;
@@ -35,18 +32,15 @@ function handleInit(data) {
       satrecCache.set(sat.id, satrec);
       count++;
     } catch {
-      // Skip satellites with invalid TLE data
+      // skip invalid TLE data
     }
   }
 
   self.postMessage({ type: 'ready', count });
 }
 
-/**
- * Propagate all cached satrecs for the given timestamp.
- * Returns positions as a transferable Float64Array with layout [id, lat, lon, alt, ...].
- * @param {{ timestamp: number }} data - Date.now() milliseconds
- */
+// propagate all cached satrecs for given timestamp
+// returns positions as transferable Float64Array [id, lat, lon, alt, ...]
 function handlePropagate(data) {
   const date = new Date(data.timestamp);
   const gmst = satellite.gstime(date);
@@ -69,7 +63,7 @@ function handlePropagate(data) {
       buffer[offset + 2] = satellite.degreesLong(geo.longitude);
       buffer[offset + 3] = geo.height;
 
-      // Velocity magnitude (km/s) from ECI velocity vector
+      // velocity magnitude (km/s) from ECI vel vector
       if (posVel.velocity && typeof posVel.velocity === 'object') {
         const vx = posVel.velocity.x;
         const vy = posVel.velocity.y;
@@ -81,11 +75,11 @@ function handlePropagate(data) {
 
       validCount++;
     } catch {
-      // Skip failed propagations (decayed orbits, bad TLE, etc.)
+      // skip failed propagations (decayed orbits, bad TLE, etc)
     }
   }
 
-  // Transfer the underlying ArrayBuffer for zero-copy
+  // transfer ArrayBuffer for zero-copy
   const transferBuffer = buffer.buffer;
   self.postMessage(
     { type: 'positions', buffer: transferBuffer, count: validCount },
@@ -93,10 +87,7 @@ function handlePropagate(data) {
   );
 }
 
-/**
- * Update specific satrecs when TLEs are refreshed.
- * @param {{ satellites: Array<{ id: number, tle1: string, tle2: string }> }} data
- */
+// update specific satrecs when TLEs are refreshed
 function handleUpdate(data) {
   let count = 0;
 
@@ -106,7 +97,7 @@ function handleUpdate(data) {
       satrecCache.set(sat.id, satrec);
       count++;
     } catch {
-      // Skip invalid TLE data
+      // skip invalid TLE data
     }
   }
 

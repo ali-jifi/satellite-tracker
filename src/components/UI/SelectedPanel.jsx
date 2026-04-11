@@ -23,13 +23,13 @@ function SelectedSatelliteRow({ satellite, onDeselect }) {
   return (
     <div className="mb-0.5">
       <div className="flex items-center gap-1.5 px-2 py-1.5 rounded hover:bg-[var(--glass-hover)] transition-colors duration-100">
-        {/* Color dot */}
+        {/* color dot */}
         <span
           className="w-1.5 h-1.5 rounded-full flex-shrink-0"
           style={{ backgroundColor: color }}
         />
 
-        {/* Name */}
+        {/* name */}
         <span
           className="text-[11px] flex-1 truncate"
           style={{ color: 'var(--text-primary)' }}
@@ -37,7 +37,7 @@ function SelectedSatelliteRow({ satellite, onDeselect }) {
           {satellite.name}
         </span>
 
-        {/* Info toggle */}
+        {/* info toggle */}
         <button
           onClick={handleInfoClick}
           className="p-0.5 rounded hover:bg-[var(--glass-hover)]"
@@ -49,7 +49,7 @@ function SelectedSatelliteRow({ satellite, onDeselect }) {
           />
         </button>
 
-        {/* Deselect */}
+        {/* deselect */}
         <button
           onClick={() => onDeselect(satellite.id)}
           className="p-0.5 rounded hover:bg-[var(--glass-hover)]"
@@ -69,7 +69,7 @@ export default function SelectedPanel() {
   const clearSelection = useSatelliteStore((s) => s.clearSelection);
 
   const handleDeselect = useCallback((id) => {
-    // If detail panel is showing this satellite, close it
+    // if detail panel shows this sat, close it
     if (useSatelliteStore.getState().detailSatelliteId === id) {
       useSatelliteStore.getState().clearDetailSatelliteId();
     }
@@ -92,7 +92,7 @@ export default function SelectedPanel() {
 
   return (
     <div className="mb-4">
-      {/* Header */}
+      {/* header */}
       <div className="flex items-center justify-between mb-2">
         <h3
           className="text-[10px] tracking-[0.2em] uppercase"
@@ -110,7 +110,7 @@ export default function SelectedPanel() {
         </button>
       </div>
 
-      {/* List */}
+      {/* list */}
       <div>
         {selectedSats.map((sat) => (
           <SelectedSatelliteRow

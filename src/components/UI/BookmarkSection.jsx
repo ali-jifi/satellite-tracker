@@ -11,7 +11,7 @@ export default function BookmarkSection() {
   const satellites = useSatelliteStore((s) => s.satellites);
   const setDetailSatelliteId = useSatelliteStore((s) => s.setDetailSatelliteId);
 
-  // Filter to only valid (existing) bookmarks
+  // filter to valid (existing) bookmarks only
   const validBookmarks = bookmarks
     .filter((id) => satellites.has(id))
     .map((id) => satellites.get(id));
@@ -35,12 +35,12 @@ export default function BookmarkSection() {
               className="flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer transition-all duration-150 hover:bg-[var(--glass-hover)] group"
               onClick={() => setDetailSatelliteId(sat.id)}
             >
-              {/* Category color dot */}
+              {/* category color dot */}
               <span
                 className="w-1.5 h-1.5 rounded-full flex-shrink-0"
                 style={{ background: color }}
               />
-              {/* Satellite info */}
+              {/* sat info */}
               <div className="min-w-0 flex-1">
                 <div
                   className="text-[11px] truncate"
@@ -55,7 +55,7 @@ export default function BookmarkSection() {
                   {sat.id}
                 </div>
               </div>
-              {/* Remove button */}
+              {/* remove btn */}
               <button
                 onClick={(e) => {
                   e.stopPropagation();

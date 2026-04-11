@@ -1,7 +1,7 @@
 import { JulianDate } from 'cesium';
 import useAppStore from '../stores/appStore';
 
-// Toast event system
+// toast event system
 const toastListeners = new Set();
 
 function dispatchToast(toast) {
@@ -15,20 +15,13 @@ function dispatchToast(toast) {
   }
 }
 
-/**
- * Subscribe to toast events.
- * @param {Function} cb - callback receiving toast objects
- * @returns {Function} unsubscribe
- */
+// subscribe to toast events, returns unsub fn
 export function onToast(cb) {
   toastListeners.add(cb);
   return () => toastListeners.delete(cb);
 }
 
-/**
- * Request browser notification permission.
- * @returns {Promise<string>} 'granted' | 'denied' | 'default' | 'unsupported'
- */
+// request browser notif permission
 export async function requestNotificationPermission() {
   if (!('Notification' in window)) {
     return 'unsupported';
@@ -39,13 +32,7 @@ export async function requestNotificationPermission() {
   return Notification.requestPermission();
 }
 
-/**
- * Send an in-app toast notification. If browser notifications are granted
- * and the page is hidden, also fire a native Notification.
- * @param {string} title
- * @param {string} body
- * @param {object} options - optional: { tag }
- */
+// send in-app toast, also fires native notif if granted and page is hidden
 export function sendNotification(title, body, options = {}) {
   dispatchToast({ title, body });
 
@@ -62,20 +49,14 @@ export function sendNotification(title, body, options = {}) {
   }
 }
 
-/**
- * Schedule a notification to fire `leadTimeMs` before an event.
- * Uses CesiumJS sim-time polling so notifications fire correctly during
- * accelerated playback. Falls back to wall-clock setTimeout when no viewer.
- * @param {{ time: Date, title: string, body: string }} event
- * @param {number} leadTimeMs
- * @returns {number|null} interval/timeout ID for cleanup, or null if already past
- */
+// schedule notif to fire leadTimeMs before event
+// uses CesiumJS sim-time polling for accel playback, falls back to wall-clock setTimeout
 export function scheduleEventNotification(event, leadTimeMs) {
   const fireAt = event.time.getTime() - leadTimeMs;
   const viewer = useAppStore.getState().viewerRef;
 
   if (viewer && viewer.clock) {
-    // Sim-time polling approach
+    // sim-time polling approach
     const nowSim = JulianDate.toDate(viewer.clock.currentTime).getTime();
     if (fireAt <= nowSim) return null;
 
@@ -92,7 +73,7 @@ export function scheduleEventNotification(event, leadTimeMs) {
     return intervalId;
   }
 
-  // Fallback: no viewer available, use wall-clock
+  // fallback: no viewer, use wall-clock
   const delay = fireAt - Date.now();
   if (delay <= 0) return null;
   return setTimeout(() => {

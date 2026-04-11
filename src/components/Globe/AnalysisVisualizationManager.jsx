@@ -5,14 +5,10 @@ import useAppStore from '../../stores/appStore';
 import useAnalysisStore from '../../stores/analysisStore';
 import useSatelliteStore from '../../stores/satelliteStore';
 
-/**
- * AnalysisVisualizationManager — render-null imperative component.
- * Subscribes to analysisStore to highlight constellation satellites on the globe
- * by recoloring PointPrimitives in the existing PointPrimitiveCollection.
- */
+// render-null imperative component, highlights constellation sats by recoloring PointPrimitives
 export default function AnalysisVisualizationManager() {
   const initializedRef = useRef(false);
-  const originalColorsRef = useRef(new Map()); // noradId -> Cesium.Color
+  const originalColorsRef = useRef(new Map()); // noradId -> Cesium.Color orig
   const currentConstellationRef = useRef(null);
   const closeApproachEntitiesRef = useRef([]);
 
@@ -26,7 +22,7 @@ export default function AnalysisVisualizationManager() {
       const viewer = useAppStore.getState().viewerRef;
       if (!viewer || viewer.isDestroyed()) return null;
 
-      // Find the PointPrimitiveCollection in the scene primitives
+      // find PointPrimitiveCollection in scene primitives
       const primitives = viewer.scene.primitives;
       for (let i = 0; i < primitives.length; i++) {
         const p = primitives.get(i);
@@ -38,7 +34,7 @@ export default function AnalysisVisualizationManager() {
     }
 
     function getPointMap(collection) {
-      // Build a map of noradId -> point primitive
+      // build map of noradId -> point primitive
       const map = new Map();
       for (let i = 0; i < collection.length; i++) {
         const point = collection.get(i);
@@ -54,7 +50,7 @@ export default function AnalysisVisualizationManager() {
       if (!collection) return;
 
       for (const [id, origColor] of originalColorsRef.current) {
-        // Find the point by iterating (we cached the color by id)
+        // find point by iterating (color cached by id)
         for (let i = 0; i < collection.length; i++) {
           const point = collection.get(i);
           if (point && point.id === id) {
@@ -71,20 +67,20 @@ export default function AnalysisVisualizationManager() {
       const collection = getPointCollection();
       if (!collection || !constellationData) return;
 
-      // Find the constellation in the data
+      // find constellation in data
       const constellation = constellationData.find((c) => c.name === constellationName);
       if (!constellation) return;
 
-      // Build a set of satellite IDs in this constellation
+      // build set of sat IDs in this constellation
       const satIds = new Set(constellation.satellites.map((s) => s.id));
 
-      // Iterate all points and highlight matching ones
+      // iterate all points and highlight matches
       for (let i = 0; i < collection.length; i++) {
         const point = collection.get(i);
         if (!point || point.id == null) continue;
 
         if (satIds.has(point.id)) {
-          // Store original color before changing
+          // store orig color before changing
           if (!originalColorsRef.current.has(point.id)) {
             originalColorsRef.current.set(point.id, point.color.clone());
           }
@@ -96,7 +92,7 @@ export default function AnalysisVisualizationManager() {
       currentConstellationRef.current = constellationName;
     }
 
-    // Subscribe to highlighted constellation changes
+    // sub to highlighted constellation changes
     const unsub = useAnalysisStore.subscribe(
       (state) => ({
         highlighted: state.highlightedConstellation,
@@ -105,10 +101,10 @@ export default function AnalysisVisualizationManager() {
       (curr, prev) => {
         if (curr.highlighted === prev.highlighted) return;
 
-        // Clear previous highlighting
+        // clear prev highlight
         clearHighlight();
 
-        // Apply new highlighting if a constellation is selected
+        // apply new highlight if constellation selected
         if (curr.highlighted && curr.data) {
           applyHighlight(curr.highlighted, curr.data);
         }
@@ -116,7 +112,7 @@ export default function AnalysisVisualizationManager() {
       { equalityFn: (a, b) => a.highlighted === b.highlighted }
     );
 
-    // --- Close approach visualization ---
+    // --- close approach viz ---
 
     function clearCloseApproachViz() {
       const viewer = useAppStore.getState().viewerRef;
@@ -136,8 +132,8 @@ export default function AnalysisVisualizationManager() {
         return [];
       }
 
-      // One full orbit period (minutes from satrec)
-      const periodMin = (2 * Math.PI) / satrec.no; // no is in rad/min
+      // one full orbit period (min from satrec)
+      const periodMin = (2 * Math.PI) / satrec.no; // no in rad/min
       const periodMs = periodMin * 60000;
       const stepMs = periodMs / steps;
       const positions = [];
@@ -154,12 +150,12 @@ export default function AnalysisVisualizationManager() {
               Cesium.Cartesian3.fromDegrees(
                 satellite.degreesLong(geo.longitude),
                 satellite.degreesLat(geo.latitude),
-                geo.height * 1000 // km to meters
+                geo.height * 1000 // km -> m
               )
             );
           }
         } catch {
-          // skip
+          // skip bad propagation
         }
       }
       return positions;
@@ -173,11 +169,11 @@ export default function AnalysisVisualizationManager() {
 
       const { referenceSatId, approachSatId, approachTime, refPositionEci, candPositionEci } = vizData;
 
-      // Convert ECI positions to Cartographic for the approach point marker
+      // convert ECI positions to cartographic for approach marker
       const approachDate = new Date(approachTime);
       const gmst = satellite.gstime(approachDate);
 
-      // Use the midpoint between the two satellites as the approach marker
+      // use midpoint between both sats as approach marker
       if (refPositionEci && candPositionEci) {
         const midEci = {
           x: (refPositionEci.x + candPositionEci.x) / 2,
@@ -187,9 +183,9 @@ export default function AnalysisVisualizationManager() {
         const geo = satellite.eciToGeodetic(midEci, gmst);
         const lon = satellite.degreesLong(geo.longitude);
         const lat = satellite.degreesLat(geo.latitude);
-        const alt = geo.height * 1000; // km to m
+        const alt = geo.height * 1000; // km -> m
 
-        // Approach point marker
+        // approach point marker
         const marker = viewer.entities.add({
           position: Cesium.Cartesian3.fromDegrees(lon, lat, alt),
           point: {
@@ -213,7 +209,7 @@ export default function AnalysisVisualizationManager() {
         closeApproachEntitiesRef.current.push(marker);
       }
 
-      // Draw orbit lines for both satellites
+      // draw orbit lines for both sats
       const sats = useSatelliteStore.getState().satellites;
       const refSat = sats.get(referenceSatId);
       const appSat = sats.get(approachSatId);
@@ -251,7 +247,7 @@ export default function AnalysisVisualizationManager() {
       }
     }
 
-    // Subscribe to close approach visualization changes
+    // sub to close approach viz changes
     const unsubCA = useAnalysisStore.subscribe(
       (state) => state.closeApproachVisualization,
       (curr, prev) => {

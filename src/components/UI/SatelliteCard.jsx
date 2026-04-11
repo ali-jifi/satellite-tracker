@@ -54,13 +54,13 @@ export default function SatelliteCard({ satellite, onSelect, isSelected, showAlt
           : 'hover:bg-[var(--glass-hover)] border-l-2 border-l-transparent'
       }`}
     >
-      {/* Color dot */}
+      {/* color dot */}
       <span
         className="w-1.5 h-1.5 rounded-full flex-shrink-0"
         style={{ backgroundColor: categoryColor }}
       />
 
-      {/* Center: name + meta */}
+      {/* center: name + meta */}
       <div className="flex-1 min-w-0">
         <div
           className="text-[11px] truncate"
@@ -87,7 +87,7 @@ export default function SatelliteCard({ satellite, onSelect, isSelected, showAlt
         </div>
       </div>
 
-      {/* Right: altitude */}
+      {/* right: altitude */}
       {showAltitude && altitude != null && (
         <span
           className="text-[9px] flex-shrink-0 tabular-nums"

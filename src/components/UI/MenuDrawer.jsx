@@ -18,21 +18,21 @@ export default function MenuDrawer() {
         transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
       }}
     >
-      {/* Top padding to avoid TopBar */}
+      {/* top padding to avoid TopBar */}
       <div className="pt-16 px-4 pb-6">
-        {/* Search bar -- always visible */}
+        {/* search bar -- always visible */}
         <SearchBar />
 
-        {/* Selected satellites panel -- visible when satellites selected */}
+        {/* selected sats panel -- visible when sats selected */}
         <SelectedPanel />
 
-        {/* Bookmarked satellites -- visible when bookmarks exist */}
+        {/* bookmarked sats -- visible when bookmarks exist */}
         <BookmarkSection />
 
-        {/* Category tree -- always visible, scrollable */}
+        {/* category tree -- always visible, scrollable */}
         <CategoryTree />
 
-        {/* VIEW section */}
+        {/* view section */}
         <div className="mt-6">
           <h3
             className="text-[10px] tracking-[0.2em] uppercase mb-3"

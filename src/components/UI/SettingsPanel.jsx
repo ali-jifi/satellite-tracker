@@ -45,7 +45,7 @@ function SpaceTrackSection() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
-  // Hydrate from localStorage on mount
+  // hydrate from localStorage on mount
   useEffect(() => {
     try {
       const stored = localStorage.getItem(LOCALSTORAGE_KEY);
@@ -71,7 +71,7 @@ function SpaceTrackSection() {
     try {
       localStorage.setItem(LOCALSTORAGE_KEY, JSON.stringify(creds));
     } catch {
-      // storage full or unavailable
+      // storage full/unavailable
     }
     setUsername('');
     setPassword('');
@@ -93,7 +93,7 @@ function SpaceTrackSection() {
 
   return (
     <div>
-      {/* Header row */}
+      {/* header row */}
       <button
         className="flex items-center justify-between w-full cursor-pointer"
         onClick={() => setExpanded((e) => !e)}
@@ -113,7 +113,7 @@ function SpaceTrackSection() {
         </span>
       </button>
 
-      {/* Expandable form */}
+      {/* expandable form */}
       {expanded && (
         <div className="mt-2 space-y-2">
           {isConfigured ? (
@@ -204,7 +204,7 @@ export default function SettingsPanel() {
       className="fixed top-16 right-4 z-30 glass rounded-xl p-4 fade-in"
       style={{ width: 260 }}
     >
-      {/* Header */}
+      {/* header */}
       <h3
         className="text-[10px] tracking-[0.2em] uppercase mb-4"
         style={{ color: 'var(--accent)', fontWeight: 600 }}
@@ -212,7 +212,7 @@ export default function SettingsPanel() {
         SETTINGS
       </h3>
 
-      {/* Appearance section */}
+      {/* appearance section */}
       <h3
         className="text-[10px] tracking-[0.2em] uppercase mb-3"
         style={{ color: 'var(--accent)', fontWeight: 600 }}
@@ -226,12 +226,12 @@ export default function SettingsPanel() {
         <ToggleSwitch enabled={theme === 'dark'} onToggle={toggleTheme} />
       </div>
 
-      {/* Appearance divider */}
+      {/* appearance divider */}
       <div className="my-4" style={{ borderTop: '1px solid var(--glass-border)' }} />
 
-      {/* Setting items */}
+      {/* setting items */}
       <div className="space-y-3">
-        {/* Grid Lines - active */}
+        {/* grid lines */}
         <div className="flex items-center justify-between">
           <span className="text-xs" style={{ color: 'var(--text-primary)' }}>
             Grid Lines
@@ -239,7 +239,7 @@ export default function SettingsPanel() {
           <ToggleSwitch enabled={gridLinesVisible} onToggle={toggleGridLines} />
         </div>
 
-        {/* Satellite Labels */}
+        {/* sat labels */}
         <div className="flex items-center justify-between">
           <span className="text-xs" style={{ color: 'var(--text-primary)' }}>
             Satellite Labels
@@ -247,7 +247,7 @@ export default function SettingsPanel() {
           <ToggleSwitch enabled={labelsVisible} onToggle={toggleLabelsVisible} />
         </div>
 
-        {/* Show Debris */}
+        {/* show debris */}
         <div className="flex items-center justify-between">
           <span className="text-xs" style={{ color: 'var(--text-primary)' }}>
             Show Debris
@@ -255,7 +255,7 @@ export default function SettingsPanel() {
           <ToggleSwitch enabled={debrisVisible} onToggle={toggleDebrisVisible} />
         </div>
 
-        {/* Ground Tracks */}
+        {/* ground tracks */}
         <div className="flex items-center justify-between">
           <span className="text-xs" style={{ color: 'var(--text-primary)' }}>
             Ground Tracks
@@ -263,7 +263,7 @@ export default function SettingsPanel() {
           <ToggleSwitch enabled={groundTracksVisible} onToggle={toggleGroundTracks} />
         </div>
 
-        {/* Orbit Lines */}
+        {/* orbit lines */}
         <div className="flex items-center justify-between">
           <span className="text-xs" style={{ color: 'var(--text-primary)' }}>
             Orbit Lines
@@ -271,7 +271,7 @@ export default function SettingsPanel() {
           <ToggleSwitch enabled={orbitLinesVisible} onToggle={toggleOrbitLines} />
         </div>
 
-        {/* Visibility Footprints */}
+        {/* visibility footprints */}
         <div className="flex items-center justify-between">
           <span className="text-xs" style={{ color: 'var(--text-primary)' }}>
             Visibility Footprints
@@ -279,7 +279,7 @@ export default function SettingsPanel() {
           <ToggleSwitch enabled={footprintsVisible} onToggle={toggleFootprints} />
         </div>
 
-        {/* Atmosphere */}
+        {/* atmosphere */}
         <div className="flex items-center justify-between">
           <span className="text-xs" style={{ color: 'var(--text-primary)' }}>
             Atmosphere
@@ -287,7 +287,7 @@ export default function SettingsPanel() {
           <ToggleSwitch enabled={atmosphereEnabled} onToggle={toggleAtmosphere} />
         </div>
 
-        {/* Clouds */}
+        {/* clouds */}
         <div className="flex items-center justify-between">
           <span className="text-xs" style={{ color: 'var(--text-primary)' }}>
             Clouds
@@ -296,10 +296,10 @@ export default function SettingsPanel() {
         </div>
       </div>
 
-      {/* Globe Style divider */}
+      {/* globe style divider */}
       <div className="my-4" style={{ borderTop: '1px solid var(--glass-border)' }} />
 
-      {/* Globe Style section */}
+      {/* globe style section */}
       <h3
         className="text-[10px] tracking-[0.2em] uppercase mb-3"
         style={{ color: 'var(--accent)', fontWeight: 600 }}
@@ -327,10 +327,10 @@ export default function SettingsPanel() {
         ))}
       </div>
 
-      {/* Data Sources divider */}
+      {/* data sources divider */}
       <div className="my-4" style={{ borderTop: '1px solid var(--glass-border)' }} />
 
-      {/* Data Sources section */}
+      {/* data sources section */}
       <h3
         className="text-[10px] tracking-[0.2em] uppercase mb-3"
         style={{ color: 'var(--accent)', fontWeight: 600 }}
@@ -352,10 +352,10 @@ export default function SettingsPanel() {
         <SpaceTrackSection />
       </div>
 
-      {/* Notifications divider */}
+      {/* notifications divider */}
       <div className="my-4" style={{ borderTop: '1px solid var(--glass-border)' }} />
 
-      {/* Notifications section */}
+      {/* notifications section */}
       <h3
         className="text-[10px] tracking-[0.2em] uppercase mb-3"
         style={{ color: 'var(--accent)', fontWeight: 600 }}

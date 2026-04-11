@@ -18,10 +18,7 @@ import { fetchAllSatellites, startBackgroundPolling } from '../../services/celes
 import { startPropagation, stopPropagation, refreshWorkerData } from '../../services/propagationService';
 import spaceTrackService from '../../services/spaceTrackService';
 
-/**
- * Attempt to fetch supplementary data from Space-Track.
- * Non-blocking: logs warning on failure, never throws.
- */
+// fetch supplementary Space-Track data, non-blocking, warns on failure
 async function fetchSpaceTrackData() {
   const { spaceTrackEnabled, spaceTrackCredentials } = useAppStore.getState();
   if (!spaceTrackEnabled || !spaceTrackCredentials) return;
@@ -43,18 +40,15 @@ async function fetchSpaceTrackData() {
   }
 }
 
-/**
- * Apply a globe style by swapping base imagery and adjusting globe properties.
- * Preserves the grid layer if present.
- */
+// apply globe style by swapping base imagery, preserves grid layer
 function applyGlobeStyle(viewer, style, gridLayerRef, cloudLayerRef) {
   const config = GLOBE_STYLES[style] || GLOBE_STYLES.photo;
   const layers = viewer.imageryLayers;
 
-  // Remember grid layer state
+  // save grid layer state
   const gridLayer = gridLayerRef.current;
 
-  // Remove all layers except grid
+  // remove all layers except grid
   for (let i = layers.length - 1; i >= 0; i--) {
     const layer = layers.get(i);
     if (layer !== gridLayer) {
@@ -62,10 +56,10 @@ function applyGlobeStyle(viewer, style, gridLayerRef, cloudLayerRef) {
     }
   }
 
-  // Cloud layer was removed; clear the ref so the clouds effect can re-add it
+  // cloud layer removed; clear ref so clouds effect can re-add
   if (cloudLayerRef) cloudLayerRef.current = null;
 
-  // Add new base tiles at index 0 (below grid)
+  // add new base tiles at idx 0 (below grid)
   const baseTiles = new Cesium.UrlTemplateImageryProvider({
     url: config.tileUrl,
     subdomains: ['a', 'b', 'c', 'd'],
@@ -76,7 +70,7 @@ function applyGlobeStyle(viewer, style, gridLayerRef, cloudLayerRef) {
   const baseLayer = layers.addImageryProvider(baseTiles, 0);
   baseLayer.alpha = config.tileAlpha;
 
-  // Apply globe properties
+  // apply globe props
   viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString(config.baseColor);
   viewer.scene.globe.enableLighting = config.enableLighting;
 }
@@ -96,7 +90,7 @@ export default function CesiumContainer() {
   const cloudsEnabled = useAppStore((s) => s.cloudsEnabled);
 
   useEffect(() => {
-    // Guard against React Strict Mode double-mount
+    // guard against strict mode double-mount
     if (initialized.current) return;
     initialized.current = true;
 
@@ -118,7 +112,7 @@ export default function CesiumContainer() {
         shouldAnimate: true,
       });
 
-      // Dark map tile layer (CartoDB Dark Matter — roads, cities, labels)
+      // dark map tiles (CartoDB dark matter - roads, cities, labels)
       const darkTiles = new Cesium.UrlTemplateImageryProvider({
         url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
         subdomains: ['a', 'b', 'c', 'd'],
@@ -128,7 +122,7 @@ export default function CesiumContainer() {
       });
       viewer.imageryLayers.addImageryProvider(darkTiles);
 
-      // Globe appearance
+      // globe appearance
       viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString(GLOBE_BASE_COLOR);
       viewer.scene.globe.enableLighting = true;
       viewer.scene.backgroundColor = Cesium.Color.BLACK;
@@ -136,7 +130,7 @@ export default function CesiumContainer() {
       viewer.scene.globe.showGroundAtmosphere = false;
       viewer.scene.sun.glowFactor = 0.0;
 
-      // Bloom post-processing
+      // bloom post-processing
       const bloom = viewer.scene.postProcessStages.bloom;
       bloom.enabled = BLOOM_CONFIG.enabled;
       bloom.uniforms.contrast = BLOOM_CONFIG.contrast;
@@ -145,11 +139,11 @@ export default function CesiumContainer() {
       bloom.uniforms.sigma = BLOOM_CONFIG.sigma;
       bloom.uniforms.stepSize = BLOOM_CONFIG.stepSize;
 
-      // Zoom limits
+      // zoom limits
       viewer.scene.screenSpaceCameraController.minimumZoomDistance = MIN_ZOOM_DISTANCE;
       viewer.scene.screenSpaceCameraController.maximumZoomDistance = MAX_ZOOM_DISTANCE;
 
-      // Grid lines layer (hidden by default)
+      // grid lines layer (hidden by default)
       const gridProvider = new Cesium.GridImageryProvider({
         cells: 8,
         color: Cesium.Color.fromCssColorString('rgba(255, 255, 255, 0.08)'),
@@ -161,7 +155,7 @@ export default function CesiumContainer() {
       gridLayer.show = false;
       gridLayerRef.current = gridLayer;
 
-      // Set initial camera to deep space (reveal start)
+      // set initial camera to deep space (reveal start)
       viewer.camera.setView({
         destination: Cesium.Cartesian3.fromDegrees(
           REVEAL_START.destination.lon,
@@ -175,11 +169,11 @@ export default function CesiumContainer() {
         },
       });
 
-      // Store viewer ref locally and in zustand
+      // store viewer ref locally and in zustand
       viewerInstance.current = viewer;
       setViewerRef(viewer);
 
-      // Zoom-in reveal animation
+      // zoom-in reveal animation
       viewer.camera.flyTo({
         destination: Cesium.Cartesian3.fromDegrees(
           DEFAULT_CAMERA.destination.lon,
@@ -195,7 +189,7 @@ export default function CesiumContainer() {
     let stopPolling = null;
 
     initViewer().then(() => {
-      // Bootstrap data pipeline: fetch catalog -> start propagation -> poll
+      // bootstrap data pipeline: fetch catalog -> start propagation -> poll
       fetchAllSatellites((count) => {
         useSatelliteStore.getState().setLoadProgress(count);
       }).then((catalog) => {
@@ -204,7 +198,7 @@ export default function CesiumContainer() {
         useSatelliteStore.getState().setCatalogLoaded(true);
         console.log(`[CesiumContainer] Catalog loaded: ${catalog.size} satellites`);
 
-        // Supplementary Space-Track fetch (non-blocking)
+        // supplementary Space-Track fetch (non-blocking)
         fetchSpaceTrackData();
 
         startPropagation();
@@ -218,7 +212,7 @@ export default function CesiumContainer() {
       });
     });
 
-    // Subscribe to Space-Track credential changes for live activation
+    // sub to Space-Track credential changes for live activation
     let prevSpaceTrackEnabled = useAppStore.getState().spaceTrackEnabled;
     const unsubSpaceTrack = useAppStore.subscribe((state) => {
       if (state.spaceTrackEnabled === prevSpaceTrackEnabled) return;
@@ -239,12 +233,12 @@ export default function CesiumContainer() {
     };
   }, []);
 
-  // Observer marker and fly-to reactivity
+  // observer marker and fly-to reactivity
   useEffect(() => {
     if (!viewerInstance.current || !observerLocation) return;
     const viewer = viewerInstance.current;
 
-    // Remove previous observer entities
+    // remove prev observer entities
     ['observer-dot', 'observer-ring-0', 'observer-ring-1', 'observer-ring-2', 'observer-crosshair-ns', 'observer-crosshair-ew'].forEach((id) => {
       const existing = viewer.entities.getById(id);
       if (existing) viewer.entities.remove(existing);
@@ -252,7 +246,7 @@ export default function CesiumContainer() {
 
     const position = Cesium.Cartesian3.fromDegrees(observerLocation.lon, observerLocation.lat);
 
-    // Center dot
+    // center dot
     viewer.entities.add({
       id: 'observer-dot',
       position,
@@ -264,15 +258,15 @@ export default function CesiumContainer() {
       },
     });
 
-    // Concentric visibility circles using polyline circles
+    // concentric visibility circles via polyline circles
     const accentColor = Cesium.Color.fromCssColorString('#38f3bf');
-    const circleRadii = [200_000, 500_000, 1_000_000]; // meters
+    const circleRadii = [200_000, 500_000, 1_000_000]; // m
     circleRadii.forEach((radius, i) => {
       const circlePoints = [];
       const numSegments = 64;
       for (let s = 0; s <= numSegments; s++) {
         const angle = (s / numSegments) * Math.PI * 2;
-        // Approximate circle on globe surface using offset degrees
+        // approx circle on globe surface via offset degrees
         const dLat = (radius / 111320) * Math.cos(angle);
         const dLon = (radius / (111320 * Math.cos(observerLocation.lat * Math.PI / 180))) * Math.sin(angle);
         circlePoints.push(observerLocation.lon + dLon, observerLocation.lat + dLat);
@@ -287,8 +281,8 @@ export default function CesiumContainer() {
       });
     });
 
-    // Crosshair lines through observer (N-S and E-W)
-    const crosshairExtent = 12; // degrees from center
+    // crosshair lines through observer (N-S and E-W)
+    const crosshairExtent = 12; // deg from center
     viewer.entities.add({
       id: 'observer-crosshair-ns',
       polyline: {
@@ -312,7 +306,7 @@ export default function CesiumContainer() {
       },
     });
 
-    // Click handler for observer-dot to enter sky dome
+    // click handler for observer-dot to enter sky dome
     const clickHandler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
     clickHandler.setInputAction((event) => {
       const picked = viewer.scene.pick(event.position);
@@ -321,7 +315,7 @@ export default function CesiumContainer() {
       }
     }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
-    // Fly to observer at ~2000km altitude
+    // fly to observer at ~2000km alt
     viewer.camera.flyTo({
       destination: Cesium.Cartesian3.fromDegrees(
         observerLocation.lon,
@@ -336,20 +330,20 @@ export default function CesiumContainer() {
     };
   }, [observerLocation]);
 
-  // Grid lines toggle reactivity
+  // grid lines toggle reactivity
   useEffect(() => {
     if (gridLayerRef.current) {
       gridLayerRef.current.show = gridLinesVisible;
     }
   }, [gridLinesVisible]);
 
-  // Globe style switching
+  // globe style switching
   useEffect(() => {
     if (!viewerInstance.current) return;
     applyGlobeStyle(viewerInstance.current, globeStyle, gridLayerRef, cloudLayerRef);
   }, [globeStyle]);
 
-  // Atmosphere toggle
+  // atmosphere toggle
   useEffect(() => {
     if (!viewerInstance.current) return;
     const viewer = viewerInstance.current;
@@ -358,14 +352,14 @@ export default function CesiumContainer() {
     viewer.scene.fog.enabled = atmosphereEnabled;
   }, [atmosphereEnabled]);
 
-  // Cloud layer (NASA GIBS WMTS)
+  // cloud layer (NASA GIBS WMTS)
   useEffect(() => {
     if (!viewerInstance.current) return;
     const viewer = viewerInstance.current;
     const layers = viewer.imageryLayers;
 
     if (cloudsEnabled) {
-      // Use yesterday's date (today's imagery may not be available yet)
+      // use yesterday's date (today's imagery may not be avail yet)
       const yesterday = new Date(Date.now() - 86400000);
       const dateStr = yesterday.toISOString().split('T')[0];
 
@@ -389,7 +383,7 @@ export default function CesiumContainer() {
           clock: viewer.clock,
         });
 
-        // Add cloud layer on top of base tiles but below grid
+        // add cloud layer on top of base tiles but below grid
         const gridLayer = gridLayerRef.current;
         let insertIndex = layers.length;
         if (gridLayer) {
@@ -404,12 +398,12 @@ export default function CesiumContainer() {
         console.warn('[CesiumContainer] Failed to add cloud layer:', err.message);
       }
     } else {
-      // Remove cloud layer if it exists
+      // remove cloud layer if it exists
       if (cloudLayerRef.current) {
         try {
           layers.remove(cloudLayerRef.current, true);
         } catch {
-          // layer may already be removed
+          // layer may already be removed by style swap
         }
         cloudLayerRef.current = null;
       }

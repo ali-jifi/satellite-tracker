@@ -1,11 +1,6 @@
 import * as satellite from 'satellite.js';
 
-/**
- * Parse CelesTrak GP JSON array into satellite objects with cached satrec.
- * @param {object[]} gpJsonArray - Array of GP JSON objects from CelesTrak.
- * @param {string} groupName - CelesTrak group name (used as category).
- * @returns {object[]} Parsed satellite objects.
- */
+// parse CelesTrak GP JSON array into sat objects w/ cached satrec
 export function parseGPData(gpJsonArray, groupName) {
   const results = [];
 
@@ -34,16 +29,16 @@ export function parseGPData(gpJsonArray, groupName) {
         launchDate: gp.LAUNCH_DATE,
       });
     } catch {
-      // Skip satellites with bad TLE data
+      // skip sats w/ bad TLE data
     }
   }
 
   return results;
 }
 
-// === Legacy functions (kept for backward compatibility) ===
+// === legacy fns (kept for backward compat) ===
 
-/** @deprecated Use CelesTrak GP JSON via celestrakService.js instead. */
+// @deprecated use CelesTrak GP JSON via celestrakService.js instead
 export async function fetchTLEsFromCelesTrak(category = 'stations') {
   const url = `https://celestrak.org/NORAD/elements/gp.php?GROUP=${category}&FORMAT=tle`;
 
@@ -57,7 +52,7 @@ export async function fetchTLEsFromCelesTrak(category = 'stations') {
   }
 }
 
-/** @deprecated Use parseGPData for GP JSON format instead. */
+// @deprecated use parseGPData for GP JSON format instead
 export function parseTLEText(tleText) {
   const lines = tleText.trim().split('\n');
   const satellites = [];
@@ -77,7 +72,7 @@ export function parseTLEText(tleText) {
   return satellites;
 }
 
-/** @deprecated Use CelesTrak GP JSON format instead. */
+// @deprecated use CelesTrak GP JSON format instead
 export async function fetchTLEsFromSpaceTrack(username, password) {
   const loginUrl = 'https://www.space-track.org/ajaxauth/login';
   const queryUrl = 'https://www.space-track.org/basicspacedata/query/class/gp/EPOCH/>now-30/orderby/NORAD_CAT_ID/format/tle';

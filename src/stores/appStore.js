@@ -1,33 +1,33 @@
 import { create } from 'zustand';
 
 const useAppStore = create((set, get) => ({
-  // CesiumJS viewer reference (imperative bridge)
+  // CesiumJS viewer ref (imperative bridge)
   viewerRef: null,
   setViewerRef: (viewer) => set({ viewerRef: viewer }),
 
-  // Loading state
+  // loading state
   isLoading: true,
   setLoading: (loading) => set({ isLoading: loading }),
 
-  // UI panels
+  // ui panels
   menuOpen: false,
   settingsOpen: false,
   toggleMenu: () => set((s) => ({ menuOpen: !s.menuOpen, settingsOpen: false })),
   toggleSettings: () => set((s) => ({ settingsOpen: !s.settingsOpen, menuOpen: false })),
   closeAllPanels: () => set({ menuOpen: false, settingsOpen: false }),
 
-  // Observer location: { lat, lon, label } or null
+  // observer location: { lat, lon, label } | null
   observerLocation: null,
   locationPromptOpen: false,
   setObserverLocation: (loc) => set({ observerLocation: loc, locationPromptOpen: false }),
   openLocationPrompt: () => set({ locationPromptOpen: true }),
   closeLocationPrompt: () => set({ locationPromptOpen: false }),
 
-  // Globe settings
+  // globe settings
   gridLinesVisible: false,
   toggleGridLines: () => set((s) => ({ gridLinesVisible: !s.gridLinesVisible })),
 
-  // Visibility toggles
+  // visibility toggles
   debrisVisible: true,
   toggleDebrisVisible: () => set((s) => ({ debrisVisible: !s.debrisVisible })),
   labelsVisible: true,
@@ -39,7 +39,7 @@ const useAppStore = create((set, get) => ({
   footprintsVisible: true,
   toggleFootprints: () => set((s) => ({ footprintsVisible: !s.footprintsVisible })),
 
-  // Globe style & visual options
+  // globe style & visual opts
   globeStyle: 'photo', // 'photo' | 'daynight' | 'dark'
   setGlobeStyle: (style) => set({ globeStyle: style }),
   atmosphereEnabled: false,
@@ -47,10 +47,10 @@ const useAppStore = create((set, get) => ({
   cloudsEnabled: false,
   toggleClouds: () => set((s) => ({ cloudsEnabled: !s.cloudsEnabled })),
 
-  // Simulation time state (mirrors CesiumJS Clock for React reactivity)
+  // sim time state (mirrors CesiumJS Clock for React reactivity)
   simSpeed: 1,
   simPlaying: true,
-  simDirection: 1, // 1 = forward, -1 = rewind
+  simDirection: 1, // 1=fwd, -1=rwd
   setSimSpeed: (speed) => set({ simSpeed: speed }),
   toggleSimPlaying: () => {
     const state = get();
@@ -63,17 +63,17 @@ const useAppStore = create((set, get) => ({
   },
   setSimDirection: (dir) => set({ simDirection: dir }),
 
-  // Camera mode state
+  // camera mode state
   cameraMode: 'free', // 'free' | 'follow' | 'pov' | 'skydome'
   setCameraMode: (mode) => set({ cameraMode: mode }),
   hudVisible: false,
   toggleHud: () => set((s) => ({ hudVisible: !s.hudVisible })),
 
-  // Shortcut help overlay
+  // shortcut help overlay
   shortcutHelpOpen: false,
   toggleShortcutHelp: () => set((s) => ({ shortcutHelpOpen: !s.shortcutHelpOpen })),
 
-  // Bookmarks (NORAD IDs persisted to localStorage)
+  // bookmarks (NORAD IDs persisted to localStorage)
   bookmarks: JSON.parse(localStorage.getItem('sat-tracker-bookmarks') || '[]'),
   setBookmarks: (ids) => {
     localStorage.setItem('sat-tracker-bookmarks', JSON.stringify(ids));
@@ -91,7 +91,7 @@ const useAppStore = create((set, get) => ({
     set({ bookmarks: next });
   },
 
-  // Theme state (persisted to localStorage)
+  // theme state (persisted to localStorage)
   theme: localStorage.getItem('sat-tracker-theme') || 'dark',
   setTheme: (theme) => {
     set({ theme });
@@ -103,14 +103,14 @@ const useAppStore = create((set, get) => ({
     get().setTheme(next);
   },
 
-  // Space-Track credentials
+  // Space-Track creds
   spaceTrackCredentials: null,
   setSpaceTrackCredentials: (creds) => set({ spaceTrackCredentials: creds }),
   spaceTrackEnabled: false,
   setSpaceTrackEnabled: (enabled) => set({ spaceTrackEnabled: enabled }),
 }));
 
-// Apply initial theme to DOM on store creation
+// apply initial theme to DOM on store creation
 document.documentElement.setAttribute('data-theme', useAppStore.getState().theme);
 
 export default useAppStore;

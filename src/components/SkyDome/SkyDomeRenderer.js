@@ -1,52 +1,41 @@
-/**
- * SkyDomeRenderer - Canvas 2D drawing functions for the ground observer sky dome.
- * Uses polar azimuthal projection: azimuth/elevation -> canvas x/y.
- */
+// canvas 2D drawing fns for sky dome, polar azimuthal projection (az/el -> x/y)
 
 const PI = Math.PI;
 const DEG2RAD = PI / 180;
 const RAD2DEG = 180 / PI;
 
-/**
- * Convert azimuth/elevation to canvas x/y using polar projection.
- * Zenith (el=90) maps to center, horizon (el=0) maps to edge.
- * North is up on the canvas.
- */
+// az/el -> canvas x/y polar projection; zenith=center, horizon=edge, north=up
 export function polarToCanvas(azDeg, elDeg, cx, cy, radius) {
   const r = radius * (1 - elDeg / 90);
-  const azRad = (azDeg - 90) * DEG2RAD; // rotate so North (0) is up
+  const azRad = (azDeg - 90) * DEG2RAD; // rotate so north is up
   return {
     x: cx + r * Math.cos(azRad),
     y: cy + r * Math.sin(azRad),
   };
 }
 
-/**
- * Draw dark sky gradient background.
- */
+// draw dark sky gradient bg
 export function drawBackground(ctx, width, height, cx, cy, radius) {
-  // Fill entire canvas black first
+  // fill canvas black
   ctx.fillStyle = '#050510';
   ctx.fillRect(0, 0, width, height);
 
-  // Radial gradient for sky dome circle
+  // radial gradient for dome circle
   const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
-  grad.addColorStop(0, '#0a0a1a');   // zenith: darkest
-  grad.addColorStop(0.7, '#0f0f28'); // mid-sky
-  grad.addColorStop(1, '#1a1a3a');   // horizon: slightly lighter
+  grad.addColorStop(0, '#0a0a1a');   // zenith
+  grad.addColorStop(0.7, '#0f0f28'); // mid
+  grad.addColorStop(1, '#1a1a3a');   // horizon
   ctx.fillStyle = grad;
   ctx.beginPath();
   ctx.arc(cx, cy, radius, 0, PI * 2);
   ctx.fill();
 }
 
-/**
- * Draw elevation rings and cardinal direction labels.
- */
+// draw elevation rings and cardinal labels
 export function drawGrid(ctx, cx, cy, radius) {
   ctx.save();
 
-  // Elevation rings at 30, 60 degrees (90 = zenith point, no ring needed)
+  // elevation rings at 30, 60 deg (90=zenith, no ring needed)
   const elevations = [30, 60];
   ctx.strokeStyle = 'rgba(255,255,255,0.10)';
   ctx.lineWidth = 0.5;
@@ -58,28 +47,28 @@ export function drawGrid(ctx, cx, cy, radius) {
     ctx.stroke();
   }
 
-  // Horizon ring (el = 0) slightly brighter
+  // horizon ring (el=0) slightly brighter
   ctx.strokeStyle = 'rgba(255,255,255,0.18)';
   ctx.lineWidth = 0.75;
   ctx.beginPath();
   ctx.arc(cx, cy, radius, 0, PI * 2);
   ctx.stroke();
 
-  // Crosshair lines (N-S and E-W) very faint
+  // crosshair lines (N-S, E-W) very faint
   ctx.strokeStyle = 'rgba(255,255,255,0.06)';
   ctx.lineWidth = 0.5;
-  // N-S line
+  // n-s line
   ctx.beginPath();
   ctx.moveTo(cx, cy - radius);
   ctx.lineTo(cx, cy + radius);
   ctx.stroke();
-  // E-W line
+  // e-w line
   ctx.beginPath();
   ctx.moveTo(cx - radius, cy);
   ctx.lineTo(cx + radius, cy);
   ctx.stroke();
 
-  // Elevation degree labels on the North axis
+  // elevation deg labels on north axis
   ctx.font = '10px "JetBrains Mono", monospace';
   ctx.fillStyle = 'rgba(255,255,255,0.3)';
   ctx.textAlign = 'center';
@@ -89,10 +78,10 @@ export function drawGrid(ctx, cx, cy, radius) {
     const r = radius * (1 - el / 90);
     ctx.fillText(`${el}`, cx, cy - r - 3);
   }
-  // Zenith label
+  // zenith label
   ctx.fillText('90', cx + 12, cy - 2);
 
-  // Cardinal direction labels outside the dome
+  // cardinal labels outside dome
   const cardinals = [
     { label: 'N', az: 0 },
     { label: 'E', az: 90 },
@@ -106,11 +95,11 @@ export function drawGrid(ctx, cx, cy, radius) {
   ctx.textBaseline = 'middle';
 
   for (const { label, az } of cardinals) {
-    const pos = polarToCanvas(az, -6, cx, cy, radius); // slightly outside dome
+    const pos = polarToCanvas(az, -6, cx, cy, radius); // slightly outside
     ctx.fillText(label, pos.x, pos.y);
   }
 
-  // Intercardinal labels (smaller, dimmer)
+  // intercardinal labels (smaller, dimmer)
   const intercardinals = [
     { label: 'NE', az: 45 },
     { label: 'SE', az: 135 },
@@ -129,9 +118,7 @@ export function drawGrid(ctx, cx, cy, radius) {
   ctx.restore();
 }
 
-/**
- * Compute Greenwich Mean Sidereal Time in degrees.
- */
+// compute GMST in degrees
 function gmstDeg(date) {
   const jd = date.getTime() / 86400000 + 2440587.5;
   const T = (jd - 2451545.0) / 36525.0;
@@ -141,14 +128,7 @@ function gmstDeg(date) {
   return gmst;
 }
 
-/**
- * Convert RA/Dec (degrees) to Azimuth/Elevation for an observer.
- * @param {number} raDeg - Right ascension in degrees
- * @param {number} decDeg - Declination in degrees
- * @param {number} latDeg - Observer latitude in degrees
- * @param {number} lstDeg - Local sidereal time in degrees
- * @returns {{ az: number, el: number }} azimuth and elevation in degrees
- */
+// convert RA/Dec (deg) to az/el for observer
 function raDecToAzEl(raDeg, decDeg, latDeg, lstDeg) {
   const ha = ((lstDeg - raDeg) % 360 + 360) % 360;
   const haRad = ha * DEG2RAD;
@@ -173,18 +153,7 @@ function raDecToAzEl(raDeg, decDeg, latDeg, lstDeg) {
   };
 }
 
-/**
- * Draw stars from catalog on the sky dome.
- * Stars are nearly static -- caller should cache results on an offscreen canvas.
- * @param {CanvasRenderingContext2D} ctx
- * @param {number} cx - center x
- * @param {number} cy - center y
- * @param {number} radius - dome radius
- * @param {Array} stars - star catalog entries { ra, dec, mag }
- * @param {number} observerLat - degrees
- * @param {number} observerLon - degrees
- * @param {Date} simTime - current simulation time
- */
+// draw stars on dome; nearly static, caller should cache on offscreen canvas
 export function drawStars(ctx, cx, cy, radius, stars, observerLat, observerLon, simTime) {
   const gmst = gmstDeg(simTime);
   const lst = ((gmst + observerLon) % 360 + 360) % 360;
@@ -197,11 +166,10 @@ export function drawStars(ctx, cx, cy, radius, stars, observerLat, observerLon, 
 
     const pos = polarToCanvas(az, el, cx, cy, radius);
 
-    // Size based on magnitude: brighter (lower mag) = larger
-    // Range: mag -1.5 -> radius 2.5px, mag 4.5 -> radius 0.4px
+    // size from mag: brighter=larger, range mag -1.5->2.5px to 4.5->0.4px
     const starRadius = Math.max(0.4, 2.5 - (star.mag + 1.5) * (2.1 / 6));
 
-    // Alpha based on magnitude: brighter = more opaque
+    // alpha from mag: brighter=more opaque
     const alpha = Math.max(0.15, Math.min(0.9, 1.0 - (star.mag + 1.5) * 0.12));
 
     ctx.beginPath();
@@ -213,16 +181,7 @@ export function drawStars(ctx, cx, cy, radius, stars, observerLat, observerLon, 
   ctx.restore();
 }
 
-/**
- * Draw satellite dots on the sky dome.
- * @param {CanvasRenderingContext2D} ctx
- * @param {number} cx
- * @param {number} cy
- * @param {number} radius
- * @param {Array} satellites - array of { id, name, azimuth, elevation, color }
- * @param {number|null} highlightedId - hovered satellite id
- * @param {number|null} selectedId - selected (detail panel) satellite id
- */
+// draw satellite dots on dome
 export function drawSatellites(ctx, cx, cy, radius, satellites, highlightedId, selectedId) {
   ctx.save();
   ctx.font = '10px "JetBrains Mono", monospace';
@@ -235,13 +194,13 @@ export function drawSatellites(ctx, cx, cy, radius, satellites, highlightedId, s
     const isSelected = sat.id === selectedId;
     const dotRadius = isSelected ? 4.5 : isHighlighted ? 4 : 3;
 
-    // Draw dot
+    // dot
     ctx.beginPath();
     ctx.arc(pos.x, pos.y, dotRadius, 0, PI * 2);
     ctx.fillStyle = sat.color;
     ctx.fill();
 
-    // Glow effect for highlighted/selected
+    // glow for highlighted/selected
     if (isHighlighted || isSelected) {
       ctx.beginPath();
       ctx.arc(pos.x, pos.y, dotRadius + 3, 0, PI * 2);
@@ -252,12 +211,12 @@ export function drawSatellites(ctx, cx, cy, radius, satellites, highlightedId, s
       ctx.globalAlpha = 1;
     }
 
-    // Name label for highlighted or selected
+    // name label for highlighted/selected
     if (isHighlighted || isSelected) {
       const labelX = pos.x + dotRadius + 6;
       const labelY = pos.y - 2;
 
-      // Background for readability
+      // bg for readability
       const textWidth = ctx.measureText(sat.name).width;
       ctx.fillStyle = 'rgba(0,0,0,0.7)';
       ctx.fillRect(labelX - 2, labelY - 9, textWidth + 4, 13);
@@ -272,14 +231,7 @@ export function drawSatellites(ctx, cx, cy, radius, satellites, highlightedId, s
   ctx.restore();
 }
 
-/**
- * Draw predicted pass arcs as dashed lines.
- * @param {CanvasRenderingContext2D} ctx
- * @param {number} cx
- * @param {number} cy
- * @param {number} radius
- * @param {Array} passes - array of { color, points: [{ azimuth, elevation }] }
- */
+// draw predicted pass arcs as dashed lines
 export function drawPassArcs(ctx, cx, cy, radius, passes) {
   ctx.save();
 
@@ -305,7 +257,7 @@ export function drawPassArcs(ctx, cx, cy, radius, passes) {
     }
     ctx.stroke();
 
-    // Arrowhead at end point
+    // arrowhead at end
     if (pass.points.length >= 2) {
       const last = pass.points[pass.points.length - 1];
       const prev = pass.points[pass.points.length - 2];
@@ -337,16 +289,7 @@ export function drawPassArcs(ctx, cx, cy, radius, passes) {
   ctx.restore();
 }
 
-/**
- * Hit-test: find satellite at a given canvas coordinate.
- * @param {number} x - mouse x
- * @param {number} y - mouse y
- * @param {Array} satellites - array of { id, azimuth, elevation, ... }
- * @param {number} cx
- * @param {number} cy
- * @param {number} radius
- * @returns {number|null} satellite id or null
- */
+// hit-test: find sat at canvas coord, returns id or null
 export function hitTest(x, y, satellites, cx, cy, radius) {
   const threshold = 8;
   let closest = null;

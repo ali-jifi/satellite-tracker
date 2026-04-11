@@ -7,11 +7,7 @@ const PROPAGATION_INTERVAL_MS = 1000;
 let worker = null;
 let intervalId = null;
 
-/**
- * Start satellite propagation in a Web Worker.
- * Reads the satellite catalog from the store, initializes the worker with TLE data,
- * and begins a 1-second propagation loop.
- */
+// start sat propagation in a web worker, inits w/ TLE data and begins 1s loop
 export function startPropagation() {
   if (worker) {
     console.warn('[PropagationService] Already running. Call stopPropagation() first.');
@@ -25,7 +21,7 @@ export function startPropagation() {
     return;
   }
 
-  // Build TLE payload from catalog
+  // build TLE payload from catalog
   const satPayload = [];
   for (const sat of satellites.values()) {
     if (sat.tle1 && sat.tle2) {
@@ -33,13 +29,13 @@ export function startPropagation() {
     }
   }
 
-  // Create worker
+  // create worker
   worker = new Worker(
     new URL('../workers/propagationWorker.js', import.meta.url),
     { type: 'module' }
   );
 
-  // Handle messages from worker
+  // handle msgs from worker
   worker.onmessage = (e) => {
     const { type } = e.data;
 
@@ -65,24 +61,20 @@ export function startPropagation() {
     console.error('[PropagationService] Worker error:', err);
   };
 
-  // Send init message with TLE data
+  // send init msg w/ TLE data
   worker.postMessage({ type: 'init', satellites: satPayload });
 }
 
-/**
- * Start the propagation interval loop.
- */
+// start propagation interval loop
 function startLoop() {
   if (intervalId) return;
 
-  // Propagate immediately, then on interval
+  // propagate immediately, then on interval
   sendPropagate();
   intervalId = setInterval(sendPropagate, PROPAGATION_INTERVAL_MS);
 }
 
-/**
- * Send a propagate message to the worker.
- */
+// send propagate msg to worker
 function sendPropagate() {
   if (worker) {
     const viewer = useAppStore.getState().viewerRef;
@@ -93,9 +85,7 @@ function sendPropagate() {
   }
 }
 
-/**
- * Stop propagation and terminate the worker.
- */
+// stop propagation and terminate worker
 export function stopPropagation() {
   if (intervalId) {
     clearInterval(intervalId);
@@ -108,10 +98,7 @@ export function stopPropagation() {
   }
 }
 
-/**
- * Refresh worker TLE data after a background re-fetch.
- * Sends updated TLEs for all satellites currently in the catalog.
- */
+// refresh worker TLE data after bg re-fetch
 export function refreshWorkerData() {
   if (!worker) {
     console.warn('[PropagationService] No active worker. Call startPropagation() first.');

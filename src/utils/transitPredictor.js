@@ -6,14 +6,7 @@ const DEG2RAD = Math.PI / 180;
 const RAD2DEG = 180 / Math.PI;
 const TWO_PI = 2 * Math.PI;
 
-/**
- * Vincenty formula for angular separation between two points on the celestial sphere.
- * @param {number} alt1 - Altitude of point 1 (radians)
- * @param {number} az1 - Azimuth of point 1 (radians)
- * @param {number} alt2 - Altitude of point 2 (radians)
- * @param {number} az2 - Azimuth of point 2 (radians)
- * @returns {number} Angular separation in radians
- */
+// vincenty formula for angular separation between two points on the celestial sphere
 export function angularSeparation(alt1, az1, alt2, az2) {
   const dAz = az2 - az1;
   const sinAlt1 = Math.sin(alt1), cosAlt1 = Math.cos(alt1);
@@ -26,13 +19,7 @@ export function angularSeparation(alt1, az1, alt2, az2) {
   return Math.atan2(num, den);
 }
 
-/**
- * Compute satellite look angles (azimuth, elevation, range) from observer.
- * @param {Object} satrec - satellite.js satrec object
- * @param {{ lat: number, lon: number }} observer - Observer location in degrees
- * @param {Date} date - Time to compute
- * @returns {{ azimuth: number, elevation: number, range: number } | null} azimuth/elevation in degrees, range in km
- */
+// compute sat look angles (az, el, range) from observer
 function computeSatLookAngles(satrec, observer, date) {
   try {
     const posVel = satellite.propagate(satrec, date);
@@ -57,15 +44,8 @@ function computeSatLookAngles(satrec, observer, date) {
   }
 }
 
-/**
- * Get the topocentric position of a celestial body (Sun or Moon).
- * Converts suncalc south-based azimuth to north-based.
- * @param {'sun' | 'moon'} targetBody
- * @param {Date} date
- * @param {number} lat - Observer latitude in degrees
- * @param {number} lon - Observer longitude in degrees
- * @returns {{ altitude: number, azimuth: number }} Both in radians, azimuth north-based
- */
+// get topocentric pos of a celestial body (sun or moon)
+// converts suncalc south-based az to north-based
 function getTargetPosition(targetBody, date, lat, lon) {
   let pos;
   if (targetBody === 'sun') {
@@ -73,38 +53,13 @@ function getTargetPosition(targetBody, date, lat, lon) {
   } else {
     pos = SunCalc.getMoonPosition(date, lat, lon);
   }
-  // Convert azimuth from south-based to north-based
+  // convert az from south-based to north-based
   const northAz = (pos.azimuth + Math.PI) % TWO_PI;
   return { altitude: pos.altitude, azimuth: northAz };
 }
 
-/**
- * Predict satellite transits across a celestial body.
- *
- * Two-phase algorithm:
- *   Phase 1: Coarse scan at stepMs intervals to find candidate transit times
- *   Phase 2: Fine refinement at 0.5s steps around each candidate for precise
- *            minimum angular separation and duration estimation
- *
- * @param {Array} satellites - Array of { id, name, satrec } objects
- * @param {{ lat: number, lon: number }} observer - Observer location in degrees
- * @param {'sun' | 'moon'} targetBody
- * @param {{ start: Date, end: Date }} timeWindow
- * @param {Object} [options]
- * @param {number} [options.angularThresholdDeg=2.0] - Max angular distance in degrees
- * @param {number} [options.minDurationMs=0] - Minimum transit duration in ms
- * @param {number} [options.stepMs=10000] - Coarse scan step in ms
- * @returns {Array<{
- *   satelliteId: number,
- *   name: string,
- *   targetBody: string,
- *   time: Date,
- *   angularDistanceDeg: number,
- *   angularDistanceArcsec: number,
- *   durationMs: number,
- *   brightness: number
- * }>}
- */
+// predict sat transits across a celestial body
+// two-phase algo: coarse scan at stepMs intervals, then 0.5s fine refinement
 export function predictTransits(satellites, observer, targetBody, timeWindow, options = {}) {
   const {
     angularThresholdDeg = 2.0,
@@ -116,15 +71,15 @@ export function predictTransits(satellites, observer, targetBody, timeWindow, op
   const startMs = timeWindow.start.getTime();
   const endMs = timeWindow.end.getTime();
 
-  // Phase 1: Coarse scan to find candidate times
-  // Track per-satellite to avoid duplicate detections for same transit event
+  // phase 1: coarse scan to find candidate times
+  // track per-sat to avoid dupe detections for same transit event
   const candidateMap = new Map(); // key: satId -> array of candidate ms timestamps
 
   for (let ms = startMs; ms <= endMs; ms += stepMs) {
     const date = new Date(ms);
     const target = getTargetPosition(targetBody, date, lat, lon);
 
-    // Skip if target body is below horizon
+    // skip if target body is below horizon
     if (target.altitude < 0) continue;
 
     for (const sat of satellites) {
@@ -145,13 +100,13 @@ export function predictTransits(satellites, observer, targetBody, timeWindow, op
     }
   }
 
-  // Group consecutive candidate timestamps into transit events
+  // group consecutive candidate timestamps into transit events
   const transits = [];
-  const FINE_STEP = 500; // 0.5 second refinement
-  const REFINE_WINDOW = 30000; // +/- 30 seconds around candidate
+  const FINE_STEP = 500; // 0.5s refinement
+  const REFINE_WINDOW = 30000; // +/- 30s around candidate
 
   for (const [satId, timestamps] of candidateMap) {
-    // Group consecutive timestamps (within 2x stepMs) into events
+    // group consecutive timestamps (within 2x stepMs) into events
     const events = [];
     let eventStart = timestamps[0];
     let eventEnd = timestamps[0];
@@ -167,11 +122,11 @@ export function predictTransits(satellites, observer, targetBody, timeWindow, op
     }
     events.push({ start: eventStart, end: eventEnd });
 
-    // Find the satellite object
+    // find the sat obj
     const sat = satellites.find((s) => s.id === satId);
     if (!sat) continue;
 
-    // Phase 2: Refine each event
+    // phase 2: refine each event
     for (const event of events) {
       const refineStart = Math.max(startMs, event.start - REFINE_WINDOW);
       const refineEnd = Math.min(endMs, event.end + REFINE_WINDOW);
@@ -222,22 +177,13 @@ export function predictTransits(satellites, observer, targetBody, timeWindow, op
     }
   }
 
-  // Sort by time ascending
+  // sort by time asc
   transits.sort((a, b) => a.time.getTime() - b.time.getTime());
   return transits;
 }
 
-/**
- * Warning mode: scan next 2 hours for both Sun and Moon transits.
- * Uses coarse 10-second step with 2-degree threshold.
- *
- * @param {Array} satellites - Array of { id, name, satrec } objects (bookmarked + bright)
- * @param {{ lat: number, lon: number }} observer
- * @param {Object} [options]
- * @param {number} [options.hoursAhead=2]
- * @param {number} [options.angularThresholdDeg=2.0]
- * @returns {Array} Combined Sun + Moon transit results sorted by time
- */
+// warning mode: scan next 2h for both sun and moon transits
+// uses coarse 10s step w/ 2deg threshold
 export function predictTransitsWarningMode(satellites, observer, options = {}) {
   const {
     hoursAhead = 2,
@@ -260,19 +206,8 @@ export function predictTransitsWarningMode(satellites, observer, options = {}) {
   return combined;
 }
 
-/**
- * Planning mode: scan user-specified window at higher precision.
- *
- * @param {Array} satellites - Array of { id, name, satrec } objects
- * @param {{ lat: number, lon: number }} observer
- * @param {Object} config
- * @param {'sun' | 'moon'} config.targetBody
- * @param {Date} config.startDate
- * @param {Date} config.endDate
- * @param {number} [config.minDurationMs=0]
- * @param {number} [config.angularThresholdDeg=2.0]
- * @returns {Array} Transit results with arcsecond precision, sorted by angular distance
- */
+// planning mode: scan user-specified window at higher precision
+// returns transit results w/ arcsec precision, sorted by angular distance
 export function predictTransitsPlanningMode(satellites, observer, config) {
   const {
     targetBody,
@@ -287,10 +222,10 @@ export function predictTransitsPlanningMode(satellites, observer, config) {
   const results = predictTransits(satellites, observer, targetBody, timeWindow, {
     angularThresholdDeg,
     minDurationMs,
-    stepMs: 1000, // 1-second coarse step for higher precision
+    stepMs: 1000, // 1s coarse step for higher precision
   });
 
-  // Sort by angular distance (closest first) for planning use
+  // sort by angular distance (closest first) for planning use
   results.sort((a, b) => a.angularDistanceDeg - b.angularDistanceDeg);
   return results;
 }

@@ -1,7 +1,7 @@
 import * as Cesium from 'cesium';
 
-// === Inclination mode (default) ===
-// Gradient: Red -> Orange -> Yellow -> Green -> Blue by orbital inclination
+// === inclination mode (default) ===
+// gradient: red -> orange -> yellow -> green -> blue by orbital inclination
 
 export const INCLINATION_COLORS = [
   { maxInclination: 30, color: '#ff4444', label: '0-30' },
@@ -11,22 +11,22 @@ export const INCLINATION_COLORS = [
   { maxInclination: 180, color: '#4488ff', label: '120-180' },
 ];
 
-// Pre-computed Cesium.Color objects for inclination bands
+// pre-computed Cesium.Color objects for inclination bands
 const INCLINATION_CESIUM = INCLINATION_COLORS.map((entry) => ({
   ...entry,
   cesiumColor: Cesium.Color.fromCssColorString(entry.color),
 }));
 
-// Pre-computed raw floats for inclination bands (for PointPrimitive hot loop)
+// pre-computed raw floats for inclination bands (for PointPrimitive hot loop)
 const INCLINATION_RAW = INCLINATION_COLORS.map((entry) => {
   const c = Cesium.Color.fromCssColorString(entry.color);
   return { maxInclination: entry.maxInclination, red: c.red, green: c.green, blue: c.blue };
 });
 
-// === Category mode ===
+// === category mode ===
 
 export const CATEGORY_COLORS = {
-  // Communications
+  // communications
   'iridium': '#00e5ff',
   'iridium-NEXT': '#00e5ff',
   'orbcomm': '#00e5ff',
@@ -38,28 +38,28 @@ export const CATEGORY_COLORS = {
   'x-comm': '#00e5ff',
   'starlink': '#00e5ff',
   'oneweb': '#00e5ff',
-  // Navigation
+  // navigation
   'gps-ops': '#00e676',
   'glonass-ops': '#00e676',
   'galileo': '#00e676',
   'beidou': '#00e676',
   'gnss': '#00e676',
-  // Weather
+  // weather
   'weather': '#ffea00',
   'noaa': '#ffea00',
   'goes': '#ffea00',
-  // Science
+  // science
   'science': '#d500f9',
   'geodetic': '#d500f9',
   'engineering': '#d500f9',
   'education': '#d500f9',
-  // Military
+  // military
   'military': '#ff1744',
   'radar': '#ff1744',
-  // Amateur
+  // amateur
   'amateur': '#ff9100',
   'satnogs': '#ff9100',
-  // Other
+  // other
   'active': '#cccccc',
   'visual': '#cccccc',
   'stations': '#cccccc',
@@ -77,7 +77,7 @@ export const CATEGORY_COLORS = {
   'other': '#cccccc',
 };
 
-// Pre-compute category Cesium colors and raw floats
+// pre-compute category Cesium colors and raw floats
 const CATEGORY_CESIUM_CACHE = {};
 const CATEGORY_RAW_CACHE = {};
 for (const [key, hex] of Object.entries(CATEGORY_COLORS)) {
@@ -89,12 +89,12 @@ for (const [key, hex] of Object.entries(CATEGORY_COLORS)) {
 const DEFAULT_CATEGORY_CESIUM = Cesium.Color.fromCssColorString('#cccccc');
 const DEFAULT_CATEGORY_RAW = { red: DEFAULT_CATEGORY_CESIUM.red, green: DEFAULT_CATEGORY_CESIUM.green, blue: DEFAULT_CATEGORY_CESIUM.blue };
 
-// Debris color
+// debris color
 const DEBRIS_HEX = '#9e9e9e';
 const DEBRIS_CESIUM = Cesium.Color.fromCssColorString(DEBRIS_HEX);
 const DEBRIS_RAW = { red: DEBRIS_CESIUM.red, green: DEBRIS_CESIUM.green, blue: DEBRIS_CESIUM.blue };
 
-// === Altitude mode ===
+// === alt mode ===
 
 const ALT_LEO_CESIUM = Cesium.Color.fromCssColorString('#00ff88');
 const ALT_MEO_CESIUM = Cesium.Color.fromCssColorString('#ffd700');
@@ -103,7 +103,7 @@ const ALT_LEO_RAW = { red: ALT_LEO_CESIUM.red, green: ALT_LEO_CESIUM.green, blue
 const ALT_MEO_RAW = { red: ALT_MEO_CESIUM.red, green: ALT_MEO_CESIUM.green, blue: ALT_MEO_CESIUM.blue };
 const ALT_GEO_RAW = { red: ALT_GEO_CESIUM.red, green: ALT_GEO_CESIUM.green, blue: ALT_GEO_CESIUM.blue };
 
-// === Country mode ===
+// === country mode ===
 
 const COUNTRY_MAP = {
   'US': '#4488ff',
@@ -126,22 +126,14 @@ for (const [key, hex] of Object.entries(COUNTRY_MAP)) {
 const DEFAULT_COUNTRY_CESIUM = Cesium.Color.fromCssColorString('#aaaaaa');
 const DEFAULT_COUNTRY_RAW = { red: DEFAULT_COUNTRY_CESIUM.red, green: DEFAULT_COUNTRY_CESIUM.green, blue: DEFAULT_COUNTRY_CESIUM.blue };
 
-// === Public API ===
+// === public API ===
 
-/**
- * Check if satellite is debris based on objectType field.
- */
+// check if sat is debris based on objectType field
 export function isDebris(satellite) {
   return satellite.objectType === 'DEBRIS' || satellite.objectType === 'DEB';
 }
 
-/**
- * Get Cesium.Color for a satellite based on current color mode.
- * @param {object} satellite - Satellite object from store
- * @param {string} mode - Color mode: 'inclination' | 'category' | 'altitude' | 'country'
- * @param {number} [altitude] - Current altitude in km (for altitude mode)
- * @returns {Cesium.Color}
- */
+// get Cesium.Color for a sat based on current color mode
 export function getColorForSatellite(satellite, mode, altitude) {
   if (isDebris(satellite)) return DEBRIS_CESIUM;
 
@@ -172,13 +164,7 @@ export function getColorForSatellite(satellite, mode, altitude) {
   }
 }
 
-/**
- * Get raw {red, green, blue} floats (0-1) for a satellite. Avoids allocating Cesium.Color in hot loop.
- * @param {object} satellite - Satellite object from store
- * @param {string} mode - Color mode
- * @param {number} [altitude] - Current altitude in km
- * @returns {{ red: number, green: number, blue: number }}
- */
+// get raw {red, green, blue} floats (0-1) for a sat, avoids allocating Cesium.Color in hot loop
 export function getColorForSatelliteRaw(satellite, mode, altitude) {
   if (isDebris(satellite)) return DEBRIS_RAW;
 

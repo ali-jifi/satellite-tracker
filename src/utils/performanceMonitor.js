@@ -1,17 +1,12 @@
-/**
- * Performance Monitoring Utility
- *
- * Provides comprehensive performance tracking for the satellite tracker application.
- * Tracks FPS, memory usage, operation timings, and generates performance reports.
- */
+// perf monitoring utility -- tracks FPS, memory, op timings, and generates perf reports
 
 class PerformanceMonitor {
   constructor(options = {}) {
     this.enabled = options.enabled !== undefined ? options.enabled : true;
     this.logToConsole = options.logToConsole !== undefined ? options.logToConsole : false;
-    this.sampleInterval = options.sampleInterval || 1000; // 1 second
+    this.sampleInterval = options.sampleInterval || 1000; // 1s
 
-    // Performance metrics storage
+    // perf metrics storage
     this.metrics = {
       fps: [],
       frameTimes: [],
@@ -28,36 +23,34 @@ class PerformanceMonitor {
     this.lastFpsCalculation = performance.now();
     this.currentFps = 60;
 
-    // Memory tracking
+    // memory tracking
     this.memorySupported = performance.memory !== undefined;
 
-    // Active marks
+    // active marks
     this.activeMarks = new Map();
 
-    // Start monitoring
+    // start monitoring
     if (this.enabled) {
       this.startMonitoring();
     }
   }
 
-  /**
-   * Start continuous monitoring
-   */
+  // start continuous monitoring
   startMonitoring() {
     // FPS monitoring via requestAnimationFrame
     this.monitorFps();
 
-    // Memory sampling
+    // memory sampling
     this.memorySampleInterval = setInterval(() => {
       this.sampleMemory();
     }, this.sampleInterval);
 
-    // Long task detection
+    // long task detection
     if ('PerformanceObserver' in window) {
       try {
         this.longTaskObserver = new PerformanceObserver((list) => {
           list.getEntries().forEach((entry) => {
-            if (entry.duration > 50) { // Tasks >50ms are "long"
+            if (entry.duration > 50) { // tasks >50ms are "long"
               this.metrics.longTasks.push({
                 name: entry.name,
                 duration: entry.duration,
@@ -79,9 +72,7 @@ class PerformanceMonitor {
     }
   }
 
-  /**
-   * Monitor FPS using requestAnimationFrame
-   */
+  // monitor FPS using requestAnimationFrame
   monitorFps() {
     const now = performance.now();
     const frameDelta = now - this.lastFrameTime;
@@ -89,13 +80,13 @@ class PerformanceMonitor {
     this.frameCount++;
     this.lastFrameTime = now;
 
-    // Store frame time
+    // store frame time
     this.metrics.frameTimes.push(frameDelta);
     if (this.metrics.frameTimes.length > 60) {
-      this.metrics.frameTimes.shift(); // Keep last 60 frames
+      this.metrics.frameTimes.shift(); // keep last 60 frames
     }
 
-    // Calculate FPS every second
+    // calc FPS every second
     const timeSinceLastFps = now - this.lastFpsCalculation;
     if (timeSinceLastFps >= 1000) {
       this.currentFps = Math.round((this.frameCount * 1000) / timeSinceLastFps);
@@ -104,7 +95,7 @@ class PerformanceMonitor {
         timestamp: Date.now()
       });
 
-      // Keep last 60 seconds of FPS data
+      // keep last 60s of FPS data
       if (this.metrics.fps.length > 60) {
         this.metrics.fps.shift();
       }
@@ -122,9 +113,7 @@ class PerformanceMonitor {
     }
   }
 
-  /**
-   * Sample memory usage
-   */
+  // sample memory usage
   sampleMemory() {
     if (!this.memorySupported) return;
 
@@ -137,12 +126,12 @@ class PerformanceMonitor {
 
     this.metrics.memory.push(memoryInfo);
 
-    // Keep last 5 minutes of memory data (300 samples at 1s interval)
+    // keep last 5min of memory data (300 samples at 1s interval)
     if (this.metrics.memory.length > 300) {
       this.metrics.memory.shift();
     }
 
-    // Detect memory leaks (continuous growth)
+    // detect memory leaks (continuous growth)
     if (this.metrics.memory.length >= 60) {
       const recentMemory = this.metrics.memory.slice(-60);
       const firstSample = recentMemory[0].usedJSHeapSize;
@@ -156,9 +145,7 @@ class PerformanceMonitor {
     }
   }
 
-  /**
-   * Mark the start of an operation
-   */
+  // mark start of an op
   markStart(operationName) {
     if (!this.enabled) return;
 
@@ -167,9 +154,7 @@ class PerformanceMonitor {
     this.activeMarks.set(operationName, markName);
   }
 
-  /**
-   * Mark the end of an operation and measure duration
-   */
+  // mark end of an op and measure duration
   markEnd(operationName) {
     if (!this.enabled) return;
 
@@ -185,12 +170,12 @@ class PerformanceMonitor {
     const measureName = `${operationName}-measure`;
     performance.measure(measureName, startMark, endMark);
 
-    // Get the measurement
+    // get the measurement
     const measures = performance.getEntriesByName(measureName);
     if (measures.length > 0) {
       const duration = measures[measures.length - 1].duration;
 
-      // Store timing
+      // store timing
       if (!this.metrics.operationTimings[operationName]) {
         this.metrics.operationTimings[operationName] = [];
       }
@@ -200,7 +185,7 @@ class PerformanceMonitor {
         timestamp: Date.now()
       });
 
-      // Keep last 100 measurements per operation
+      // keep last 100 measurements per op
       if (this.metrics.operationTimings[operationName].length > 100) {
         this.metrics.operationTimings[operationName].shift();
       }
@@ -210,16 +195,14 @@ class PerformanceMonitor {
       }
     }
 
-    // Cleanup
+    // cleanup
     this.activeMarks.delete(operationName);
     performance.clearMarks(startMark);
     performance.clearMarks(endMark);
     performance.clearMeasures(measureName);
   }
 
-  /**
-   * Track a custom metric
-   */
+  // track a custom metric
   trackCustomMetric(name, value) {
     if (!this.enabled) return;
 
@@ -232,15 +215,13 @@ class PerformanceMonitor {
       timestamp: Date.now()
     });
 
-    // Keep last 100 values
+    // keep last 100 values
     if (this.metrics.customMetrics[name].length > 100) {
       this.metrics.customMetrics[name].shift();
     }
   }
 
-  /**
-   * Track component render
-   */
+  // track component render
   trackRender(componentName) {
     if (!this.enabled) return;
 
@@ -251,16 +232,12 @@ class PerformanceMonitor {
     this.metrics.renderCounts[componentName]++;
   }
 
-  /**
-   * Get current FPS
-   */
+  // get current FPS
   getCurrentFps() {
     return this.currentFps;
   }
 
-  /**
-   * Get average FPS over time period
-   */
+  // get avg FPS over time period
   getAverageFps(secondsAgo = 10) {
     const cutoff = Date.now() - (secondsAgo * 1000);
     const recentFps = this.metrics.fps.filter(entry => entry.timestamp >= cutoff);
@@ -271,9 +248,7 @@ class PerformanceMonitor {
     return Math.round(sum / recentFps.length);
   }
 
-  /**
-   * Get memory statistics
-   */
+  // get memory stats
   getMemoryStats() {
     if (!this.memorySupported || this.metrics.memory.length === 0) {
       return null;
@@ -284,7 +259,7 @@ class PerformanceMonitor {
     const totalMB = latest.totalJSHeapSize / (1024 * 1024);
     const limitMB = latest.jsHeapSizeLimit / (1024 * 1024);
 
-    // Calculate growth rate
+    // calc growth rate
     let growthRate = 0;
     if (this.metrics.memory.length >= 60) {
       const firstSample = this.metrics.memory[this.metrics.memory.length - 60].usedJSHeapSize;
@@ -300,9 +275,7 @@ class PerformanceMonitor {
     };
   }
 
-  /**
-   * Get operation timing statistics
-   */
+  // get op timing stats
   getOperationStats(operationName) {
     const timings = this.metrics.operationTimings[operationName];
     if (!timings || timings.length === 0) {
@@ -328,9 +301,7 @@ class PerformanceMonitor {
     };
   }
 
-  /**
-   * Generate comprehensive performance report
-   */
+  // generate comprehensive perf report
   generateReport() {
     const report = {
       timestamp: new Date().toISOString(),
@@ -350,7 +321,7 @@ class PerformanceMonitor {
 
       longTasks: {
         count: this.metrics.longTasks.length,
-        tasks: this.metrics.longTasks.slice(-10) // Last 10
+        tasks: this.metrics.longTasks.slice(-10) // last 10
       },
 
       renders: this.metrics.renderCounts,
@@ -358,12 +329,12 @@ class PerformanceMonitor {
       customMetrics: {}
     };
 
-    // Add operation statistics
+    // add op stats
     for (const opName in this.metrics.operationTimings) {
       report.operations[opName] = this.getOperationStats(opName);
     }
 
-    // Add custom metrics
+    // add custom metrics
     for (const metricName in this.metrics.customMetrics) {
       const values = this.metrics.customMetrics[metricName];
       if (values.length > 0) {
@@ -381,9 +352,7 @@ class PerformanceMonitor {
     return report;
   }
 
-  /**
-   * Print report to console
-   */
+  // print report to console
   printReport() {
     const report = this.generateReport();
 
@@ -441,16 +410,12 @@ class PerformanceMonitor {
     return report;
   }
 
-  /**
-   * Export metrics as JSON
-   */
+  // export metrics as JSON
   exportMetrics() {
     return JSON.stringify(this.generateReport(), null, 2);
   }
 
-  /**
-   * Clear all metrics
-   */
+  // clear all metrics
   clear() {
     this.metrics = {
       fps: [],
@@ -463,9 +428,7 @@ class PerformanceMonitor {
     };
   }
 
-  /**
-   * Stop monitoring
-   */
+  // stop monitoring
   stop() {
     this.enabled = false;
 
@@ -479,13 +442,13 @@ class PerformanceMonitor {
   }
 }
 
-// Create singleton instance
+// create singleton instance
 const performanceMonitor = new PerformanceMonitor({
-  enabled: import.meta.env.DEV, // Only in development by default
-  logToConsole: false // Set to true for verbose logging
+  enabled: import.meta.env.DEV, // only in dev by default
+  logToConsole: false // set to true for verbose logging
 });
 
-// Expose to window for debugging
+// expose to window for debugging
 if (typeof window !== 'undefined') {
   window.performanceMonitor = performanceMonitor;
 }

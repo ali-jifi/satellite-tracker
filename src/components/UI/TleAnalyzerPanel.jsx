@@ -78,7 +78,7 @@ export default function TleAnalyzerPanel() {
         borderRadius: 8,
       }}
     >
-      {/* Header */}
+      {/* header */}
       <div className="flex items-center justify-between px-3 py-2 flex-shrink-0">
         <div className="flex items-center gap-2">
           <ScanLine size={14} style={{ color: 'var(--accent)' }} />
@@ -106,7 +106,7 @@ export default function TleAnalyzerPanel() {
         </button>
       </div>
 
-      {/* Content */}
+      {/* content */}
       <div className="overflow-y-auto px-3 pb-2.5 flex-1 min-h-0">
         {!sat ? (
           <div
@@ -124,7 +124,7 @@ export default function TleAnalyzerPanel() {
           </div>
         ) : (
           <>
-            {/* Elements */}
+            {/* elements */}
             <SectionLabel>Elements</SectionLabel>
             <DataRow
               label="Semi-Major Axis"
@@ -155,7 +155,7 @@ export default function TleAnalyzerPanel() {
               value={`${analysis.meanMotionRevDay.toFixed(4)} rev/day`}
             />
 
-            {/* Health */}
+            {/* health */}
             <SectionLabel>Health</SectionLabel>
             <div className="flex justify-between py-[1px]">
               <span
@@ -177,7 +177,7 @@ export default function TleAnalyzerPanel() {
             <DataRow label="ndot" value={analysis.ndot.toExponential(4)} />
             <DataRow label="nddot" value={analysis.nddot.toExponential(4)} />
 
-            {/* Derived */}
+            {/* derived */}
             <SectionLabel>Derived</SectionLabel>
             <DataRow
               label="Period"

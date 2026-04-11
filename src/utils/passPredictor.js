@@ -3,13 +3,7 @@ import * as satellite from 'satellite.js';
 const DEG2RAD = Math.PI / 180;
 const RAD2DEG = 180 / Math.PI;
 
-/**
- * Compute look angles (azimuth, elevation, range) for a satellite at a given time.
- * @param {Object} satrec - satellite.js satrec object
- * @param {Object} observerGd - { longitude, latitude, height } in RADIANS
- * @param {Date} date - time to compute
- * @returns {{ azimuth: number, elevation: number, range: number } | null} degrees/km
- */
+// compute look angles (az, el, range) for a sat at a given time
 function computeLookAngles(satrec, observerGd, date) {
   try {
     const posVel = satellite.propagate(satrec, date);
@@ -29,15 +23,7 @@ function computeLookAngles(satrec, observerGd, date) {
   }
 }
 
-/**
- * Refine the boundary (rise or set time) of a pass using 1-second linear scan.
- * @param {Object} satrec
- * @param {Object} observerGd - radians
- * @param {Date} searchStart - start of search window
- * @param {Date} searchEnd - end of search window
- * @param {boolean} isRising - true = find rise (below->above), false = find set (above->below)
- * @returns {{ time: Date, azimuth: number }}
- */
+// refine pass boundary (rise or set time) using 1s linear scan
 function refineBoundary(satrec, observerGd, searchStart, searchEnd, isRising) {
   const startMs = searchStart.getTime();
   const endMs = searchEnd.getTime();
@@ -51,14 +37,14 @@ function refineBoundary(satrec, observerGd, searchStart, searchEnd, isRising) {
     if (!look) continue;
 
     if (isRising) {
-      // Find the first moment elevation >= 0
+      // find first moment el >= 0
       if (look.elevation >= 0) {
         bestTime = date;
         bestAz = look.azimuth;
         break;
       }
     } else {
-      // Find the last moment elevation >= 0
+      // find last moment el >= 0
       if (look.elevation >= 0) {
         bestTime = date;
         bestAz = look.azimuth;
@@ -71,31 +57,8 @@ function refineBoundary(satrec, observerGd, searchStart, searchEnd, isRising) {
   return { time: bestTime, azimuth: bestAz };
 }
 
-/**
- * Find upcoming satellite passes visible from observer location.
- *
- * Two-phase brute-force algorithm:
- *   Phase 1: Coarse scan at 60-second steps to detect pass boundaries
- *   Phase 2: Fine refinement at 1-second steps for precise AOS/LOS times
- *
- * @param {Object} satrec - satellite.js satrec object
- * @param {Object} observerGd - { longitude, latitude, height } in RADIANS
- * @param {Date} startTime - scan start
- * @param {Object} [options]
- * @param {number} [options.maxHours=24] - hours to scan ahead
- * @param {number} [options.maxPasses=5] - max passes to return
- * @param {number} [options.minElevation=0] - min elevation in degrees
- * @returns {Promise<Array<{
- *   start: Date,
- *   end: Date,
- *   maxElevation: number,
- *   maxElevationTime: Date,
- *   startAzimuth: number,
- *   maxAzimuth: number,
- *   endAzimuth: number,
- *   duration: number
- * }>>}
- */
+// find upcoming sat passes visible from observer location
+// two-phase brute-force: 60s coarse scan then 1s fine refinement for AOS/LOS
 export function findPasses(satrec, observerGd, startTime, options = {}) {
   const {
     maxHours = 24,
@@ -107,16 +70,16 @@ export function findPasses(satrec, observerGd, startTime, options = {}) {
     const passes = [];
     const startMs = startTime.getTime();
     const endMs = startMs + maxHours * 3600000;
-    const coarseStep = 60000; // 60 seconds
+    const coarseStep = 60000; // 60s
 
-    // Estimate orbital period for max pass duration cap (~2x typical LEO period)
+    // estimate orbital period for max pass duration cap (~2x typical LEO period)
     const meanMotion = satrec.no; // rad/min
     const orbitalPeriodMs = meanMotion > 0
       ? (2 * Math.PI / meanMotion) * 60 * 1000
       : 7200000; // fallback 2h
     const maxPassDuration = orbitalPeriodMs; // cap at one full orbit
 
-    // Phase 1: Coarse scan
+    // phase 1: coarse scan
     let inPass = false;
     let coarseStart = null;
     let coarseEnd = null;
@@ -124,17 +87,17 @@ export function findPasses(satrec, observerGd, startTime, options = {}) {
     let maxElTime = null;
     let maxElAz = 0;
 
-    // Check if satellite is already above horizon at start
+    // check if sat is already above horizon at start
     const initialLook = computeLookAngles(satrec, observerGd, startTime);
     if (initialLook && initialLook.elevation > minElevation) {
-      // Mid-pass at scan start: scan backward to find rise
+      // mid-pass at scan start: scan backward to find rise
       inPass = true;
       coarseStart = startTime;
       maxEl = initialLook.elevation;
       maxElTime = startTime;
       maxElAz = initialLook.azimuth;
 
-      // Scan backward up to 15 minutes to find rise
+      // scan backward up to 15min to find rise
       for (let ms = startMs; ms > startMs - 900000; ms -= coarseStep) {
         const look = computeLookAngles(satrec, observerGd, new Date(ms));
         if (!look || look.elevation <= minElevation) {
@@ -151,7 +114,7 @@ export function findPasses(satrec, observerGd, startTime, options = {}) {
       const look = computeLookAngles(satrec, observerGd, date);
 
       if (!look) {
-        // Propagation failure: if in pass, close it
+        // propagation failure: if in pass, close it
         if (inPass) {
           coarseEnd = new Date(ms - coarseStep);
           passes.push({ coarseStart, coarseEnd, maxEl, maxElTime, maxElAz });
@@ -162,14 +125,14 @@ export function findPasses(satrec, observerGd, startTime, options = {}) {
 
       if (look.elevation > minElevation) {
         if (!inPass) {
-          // Pass start
+          // pass start
           inPass = true;
           coarseStart = new Date(ms - coarseStep);
           maxEl = look.elevation;
           maxElTime = date;
           maxElAz = look.azimuth;
         } else {
-          // Continuation: check max pass duration
+          // continuation: check max pass duration
           if (ms - coarseStart.getTime() > maxPassDuration) {
             coarseEnd = date;
             passes.push({ coarseStart, coarseEnd, maxEl, maxElTime, maxElAz });
@@ -183,32 +146,32 @@ export function findPasses(satrec, observerGd, startTime, options = {}) {
           }
         }
       } else if (inPass) {
-        // Pass end
+        // pass end
         coarseEnd = date;
         passes.push({ coarseStart, coarseEnd, maxEl, maxElTime, maxElAz });
         inPass = false;
       }
     }
 
-    // If still in pass at end of scan window, close it
+    // if still in pass at end of scan window, close it
     if (inPass && passes.length < maxPasses) {
       coarseEnd = new Date(endMs);
       passes.push({ coarseStart, coarseEnd, maxEl, maxElTime, maxElAz });
     }
 
-    // Phase 2: Fine refinement
+    // phase 2: fine refinement
     const refined = passes.map((p) => {
-      // Refine start (rise)
+      // refine start (rise)
       const riseWindow = new Date(Math.max(p.coarseStart.getTime() - 60000, startMs - 900000));
       const riseEnd = new Date(p.coarseStart.getTime() + 120000);
       const rise = refineBoundary(satrec, observerGd, riseWindow, riseEnd, true);
 
-      // Refine end (set)
+      // refine end (set)
       const setStart = new Date(p.coarseEnd.getTime() - 120000);
       const setEnd = new Date(p.coarseEnd.getTime() + 60000);
       const set_ = refineBoundary(satrec, observerGd, setStart, setEnd, false);
 
-      // Refine max elevation: scan around coarse max at 1-second steps
+      // refine max el: scan around coarse max at 1s steps
       let bestEl = p.maxEl;
       let bestElTime = p.maxElTime;
       let bestElAz = p.maxElAz;
@@ -239,7 +202,7 @@ export function findPasses(satrec, observerGd, startTime, options = {}) {
       };
     });
 
-    // Filter out passes with max elevation below minimum
+    // filter out passes w/ max el below min
     const filtered = refined.filter((p) => p.maxElevation > minElevation && p.duration > 0);
     resolve(filtered);
   });

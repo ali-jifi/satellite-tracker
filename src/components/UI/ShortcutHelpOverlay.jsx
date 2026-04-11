@@ -66,10 +66,10 @@ export default function ShortcutHelpOverlay() {
       className="fixed inset-0 z-50 flex items-center justify-center"
       onClick={toggleShortcutHelp}
     >
-      {/* Backdrop */}
+      {/* backdrop */}
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
 
-      {/* Modal */}
+      {/* modal */}
       <div
         className="glass relative z-10 rounded-lg px-6 py-5 max-w-md w-full mx-4"
         onClick={(e) => e.stopPropagation()}

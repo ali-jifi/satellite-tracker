@@ -81,7 +81,7 @@ function TransitEntry({ entry, showDate }) {
           : undefined
       }
     >
-      {/* Top row: body icon + name + relative time */}
+      {/* top row: body icon + name + relative time */}
       <div className="flex items-center gap-2 mb-0.5">
         {entry.targetBody === 'sun' ? (
           <Sun size={12} style={{ color: '#facc15', flexShrink: 0 }} />
@@ -102,7 +102,7 @@ function TransitEntry({ entry, showDate }) {
         </span>
       </div>
 
-      {/* Data row */}
+      {/* data row */}
       <div className="flex items-center gap-3 pl-5">
         <span
           className="text-[10px] tabular-nums"
@@ -145,7 +145,7 @@ function WarningMode() {
   const runScan = useCallback(() => {
     if (!observer) return;
 
-    // Build satellite list: bookmarked satellites
+    // build sat list: bookmarked sats
     const satList = [];
     const seen = new Set();
 
@@ -157,9 +157,7 @@ function WarningMode() {
       }
     }
 
-    // Also add bright satellites (those with low NORAD IDs tend to be bigger/brighter,
-    // but we take a sample from the catalog for a reasonable scan set)
-    // Limit to first 200 non-bookmarked satellites to keep computation fast
+    // add bright sats sample from catalog, limit 200 non-bookmarked for perf
     let addCount = 0;
     for (const [id, sat] of satellites) {
       if (addCount >= 200) break;
@@ -176,7 +174,7 @@ function WarningMode() {
     }
 
     setComputing(true);
-    // Use requestAnimationFrame to avoid blocking UI
+    // rAF to avoid blocking UI
     requestAnimationFrame(() => {
       try {
         const transits = predictTransitsWarningMode(satList, observer);
@@ -262,7 +260,7 @@ function PlanningMode() {
 
   return (
     <div className="space-y-2.5">
-      {/* Target body toggle */}
+      {/* target body toggle */}
       <div>
         <label
           className="text-[9px] uppercase tracking-wider block mb-1"
@@ -296,7 +294,7 @@ function PlanningMode() {
         </div>
       </div>
 
-      {/* Date range */}
+      {/* date range */}
       <div className="grid grid-cols-2 gap-2">
         <div>
           <label
@@ -330,7 +328,7 @@ function PlanningMode() {
         </div>
       </div>
 
-      {/* Filters */}
+      {/* filters */}
       <div className="grid grid-cols-2 gap-2">
         <div>
           <label
@@ -368,7 +366,7 @@ function PlanningMode() {
         </div>
       </div>
 
-      {/* Search button */}
+      {/* search btn */}
       <button
         onClick={handleSearch}
         disabled={computing}
@@ -381,7 +379,7 @@ function PlanningMode() {
         {computing ? 'Searching...' : 'Search'}
       </button>
 
-      {/* Results */}
+      {/* results */}
       {computing && <Spinner />}
       {results !== null && !computing && (
         results.length === 0 ? (
@@ -428,7 +426,7 @@ export default function PhotobombPanel() {
         borderRadius: 8,
       }}
     >
-      {/* Header */}
+      {/* header */}
       <div className="flex items-center justify-between px-3 py-2 flex-shrink-0">
         <div className="flex items-center gap-2">
           <Sun size={14} style={{ color: 'var(--accent)' }} />
@@ -448,7 +446,7 @@ export default function PhotobombPanel() {
         </button>
       </div>
 
-      {/* Tab switcher */}
+      {/* tab switcher */}
       <div className="flex px-3 gap-1 flex-shrink-0">
         <button
           onClick={() => setActiveTab('warning')}
@@ -472,7 +470,7 @@ export default function PhotobombPanel() {
         </button>
       </div>
 
-      {/* Content */}
+      {/* content */}
       <div className="overflow-y-auto px-3 pb-2.5 flex-1 min-h-0 mt-1">
         {!observer ? (
           <div

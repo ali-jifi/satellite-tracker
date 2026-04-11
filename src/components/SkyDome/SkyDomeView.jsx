@@ -16,17 +16,14 @@ import STARS from './starCatalog';
 const DEG2RAD = Math.PI / 180;
 const RAD2DEG = 180 / Math.PI;
 
-// Throttle: ~15fps for satellite updates
+// throttle ~15fps for sat updates
 const FRAME_INTERVAL = 1000 / 15;
-// Stars are nearly static, redraw every 30 seconds
+// stars nearly static, redraw every 30s
 const STAR_UPDATE_INTERVAL = 30000;
-// Pass predictions update every 5 minutes
+// pass predictions update every 5min
 const PASS_UPDATE_INTERVAL = 300000;
 
-/**
- * Get CSS hex color for a satellite without Cesium dependency.
- * Mirrors the logic in colorModes.js but returns a CSS string.
- */
+// get CSS hex color for sat w/o Cesium dep, mirrors colorModes.js
 function getSatelliteColor(sat, colorMode) {
   const isDebris = sat.objectType === 'DEBRIS' || sat.objectType === 'DEB';
   if (isDebris) return '#9e9e9e';
@@ -73,9 +70,7 @@ function getSatelliteColor(sat, colorMode) {
   }
 }
 
-/**
- * Get simulation time from Cesium viewer clock.
- */
+// get sim time from Cesium viewer clock
 function getSimTime() {
   const viewer = useAppStore.getState().viewerRef;
   if (viewer && viewer.clock) {
@@ -90,9 +85,7 @@ function getSimTime() {
   return new Date();
 }
 
-/**
- * Compute look angles for a satellite from observer.
- */
+// compute look angles for sat from observer
 function computeSatLookAngles(satrec, observerGd, date) {
   try {
     const posVel = satellite.propagate(satrec, date);
@@ -112,11 +105,7 @@ function computeSatLookAngles(satrec, observerGd, date) {
   }
 }
 
-/**
- * Pre-filter satellites that could possibly be above the observer's horizon.
- * Uses the position buffer for a rough altitude check -- satellites below
- * ~200km or those clearly on the other side of Earth are skipped.
- */
+// pre-filter sats possibly above observer horizon using position buffer
 function getVisibleSatellites(observerGd, simTime, colorMode) {
   const { satellites, positionBuffer, positionCount } = useSatelliteStore.getState();
   if (!positionBuffer || positionCount === 0) return [];
@@ -126,7 +115,7 @@ function getVisibleSatellites(observerGd, simTime, colorMode) {
   const result = [];
   const stride = 5;
 
-  // Build a quick ID->position lookup from buffer
+  // quick id->position lookup from buffer
   const posMap = new Map();
   for (let i = 0; i < positionCount; i++) {
     const offset = i * stride;
@@ -137,27 +126,24 @@ function getVisibleSatellites(observerGd, simTime, colorMode) {
     posMap.set(id, { lat, lon, alt });
   }
 
-  // Rough angular distance filter: satellites more than ~80 degrees away
-  // (great-circle) at LEO altitude cannot be above the horizon.
-  // For higher altitudes, the visible range is larger but we'll let
-  // ecfToLookAngles handle that -- just skip obvious misses.
+  // rough angular dist filter; skip sats too far for horizon visibility
+  // higher alt sats visible from further, ecfToLookAngles handles edge cases
   for (const [id, sat] of satellites) {
     if (!sat.satrec) continue;
 
     const pos = posMap.get(id);
     if (!pos) continue;
 
-    // Quick great-circle distance check (degrees)
+    // quick great-circle dist check (deg)
     const dlat = Math.abs(pos.lat - observerLat);
     const dlon = Math.abs(((pos.lon - observerLon + 540) % 360) - 180);
     const roughDist = Math.sqrt(dlat * dlat + dlon * dlon);
 
-    // Max visible angle depends on altitude: higher sats visible from further away
-    // LEO (~400km): ~20 deg, MEO (~20000km): ~70 deg, GEO (~36000km): ~81 deg
+    // max visible angle by alt: LEO ~25, MEO ~50, GEO ~85 deg
     const maxAngle = pos.alt < 2000 ? 25 : pos.alt < 10000 ? 50 : 85;
     if (roughDist > maxAngle) continue;
 
-    // Compute precise look angles
+    // precise look angles
     const look = computeSatLookAngles(sat.satrec, observerGd, simTime);
     if (!look || look.elevation <= 0) continue;
 
@@ -187,16 +173,16 @@ export default function SkyDomeView() {
   const passArcsRef = useRef([]);
   const lastPassUpdateRef = useRef(0);
 
-  // Offscreen canvas for stars (cached)
+  // offscreen canvas for stars (cached)
   const starCanvasRef = useRef(null);
   const lastStarDrawRef = useRef(0);
 
-  // Layout
+  // layout
   const layoutRef = useRef({ cx: 0, cy: 0, radius: 0 });
 
   const active = cameraMode === 'skydome';
 
-  // Compute layout dimensions
+  // compute layout dims
   const updateLayout = useCallback(() => {
     const w = window.innerWidth;
     const h = window.innerHeight;
@@ -207,7 +193,7 @@ export default function SkyDomeView() {
     return { cx, cy, radius, w, h };
   }, []);
 
-  // Draw stars to offscreen canvas
+  // draw stars to offscreen canvas
   const updateStarCanvas = useCallback((simTime) => {
     if (!observerLocation) return;
     const { cx, cy, radius, w, h } = layoutRef.current;
@@ -225,14 +211,14 @@ export default function SkyDomeView() {
     lastStarDrawRef.current = Date.now();
   }, [observerLocation]);
 
-  // Compute pass prediction arcs for visible selected satellites
+  // compute pass prediction arcs for selected sats
   const updatePassArcs = useCallback(async (observerGd, simTime) => {
     const detailId = useSatelliteStore.getState().detailSatelliteId;
     const selectedIds = useSatelliteStore.getState().selectedIds;
     const sats = useSatelliteStore.getState().satellites;
     const colorMode = useSatelliteStore.getState().colorMode;
 
-    // Compute passes for selected + detail satellites
+    // passes for selected + detail sats
     const idsToCheck = new Set(selectedIds);
     if (detailId) idsToCheck.add(detailId);
 
@@ -250,11 +236,11 @@ export default function SkyDomeView() {
         });
 
         for (const pass of passes) {
-          // Generate arc points at ~30s intervals
+          // arc points at ~30s intervals
           const points = [];
           const startMs = pass.start.getTime();
           const endMs = pass.end.getTime();
-          const step = 30000; // 30 seconds
+          const step = 30000; // 30s
 
           for (let ms = startMs; ms <= endMs; ms += step) {
             const look = computeSatLookAngles(sat.satrec, observerGd, new Date(ms));
@@ -262,7 +248,7 @@ export default function SkyDomeView() {
               points.push({ azimuth: look.azimuth, elevation: look.elevation });
             }
           }
-          // Always include the end point
+          // always include end point
           const endLook = computeSatLookAngles(sat.satrec, observerGd, new Date(endMs));
           if (endLook) {
             points.push({ azimuth: endLook.azimuth, elevation: endLook.elevation });
@@ -276,7 +262,7 @@ export default function SkyDomeView() {
           }
         }
       } catch {
-        // Skip failed pass predictions
+        // skip failed predictions
       }
     }
 
@@ -284,7 +270,7 @@ export default function SkyDomeView() {
     lastPassUpdateRef.current = Date.now();
   }, []);
 
-  // Main animation loop
+  // main animation loop
   const animate = useCallback(() => {
     if (!active) return;
 
@@ -295,7 +281,7 @@ export default function SkyDomeView() {
       return;
     }
 
-    // Throttle to ~15fps
+    // throttle to ~15fps
     if (now - lastFrameRef.current < FRAME_INTERVAL) {
       rafRef.current = requestAnimationFrame(animate);
       return;
@@ -319,35 +305,35 @@ export default function SkyDomeView() {
       height: 0,
     };
 
-    // Compute visible satellites
+    // compute visible sats
     visibleSatsRef.current = getVisibleSatellites(observerGd, simTime, colorMode);
 
-    // Update star offscreen canvas every 30s
+    // update star canvas every 30s
     if (now - lastStarDrawRef.current > STAR_UPDATE_INTERVAL) {
       updateStarCanvas(simTime);
     }
 
-    // Update pass arcs every 5 minutes
+    // update pass arcs every 5min
     if (now - lastPassUpdateRef.current > PASS_UPDATE_INTERVAL) {
       updatePassArcs(observerGd, simTime);
     }
 
-    // Draw frame
+    // draw frame
     drawBackground(ctx, w, h, cx, cy, radius);
     drawGrid(ctx, cx, cy, radius);
 
-    // Composite cached star layer
+    // composite cached star layer
     if (starCanvasRef.current) {
       ctx.drawImage(starCanvasRef.current, 0, 0);
     }
 
-    // Draw pass arcs
+    // draw pass arcs
     drawPassArcs(ctx, cx, cy, radius, passArcsRef.current);
 
-    // Draw satellites
+    // draw sats
     drawSatellites(ctx, cx, cy, radius, visibleSatsRef.current, highlightedRef.current, detailId);
 
-    // Info text at top
+    // info text at top
     ctx.save();
     ctx.font = '10px "JetBrains Mono", monospace';
     ctx.fillStyle = 'rgba(255,255,255,0.4)';
@@ -364,7 +350,7 @@ export default function SkyDomeView() {
     rafRef.current = requestAnimationFrame(animate);
   }, [active, observerLocation, updateStarCanvas, updatePassArcs]);
 
-  // Handle canvas resize
+  // handle canvas resize
   useEffect(() => {
     if (!active) return;
 
@@ -375,7 +361,7 @@ export default function SkyDomeView() {
       canvas.height = window.innerHeight;
       updateLayout();
 
-      // Force star redraw on resize
+      // force star redraw on resize
       lastStarDrawRef.current = 0;
     }
 
@@ -384,17 +370,17 @@ export default function SkyDomeView() {
     return () => window.removeEventListener('resize', resize);
   }, [active, updateLayout]);
 
-  // Start/stop animation loop
+  // start/stop animation loop
   useEffect(() => {
     if (!active || !observerLocation) return;
 
     updateLayout();
 
-    // Initial star draw
+    // initial star draw
     const simTime = getSimTime();
     updateStarCanvas(simTime);
 
-    // Initial pass arc computation
+    // initial pass arc computation
     const observerGd = {
       longitude: observerLocation.lon * DEG2RAD,
       latitude: observerLocation.lat * DEG2RAD,
@@ -402,7 +388,7 @@ export default function SkyDomeView() {
     };
     updatePassArcs(observerGd, simTime);
 
-    // Start animation
+    // start animation
     lastFrameRef.current = 0;
     rafRef.current = requestAnimationFrame(animate);
 
@@ -414,7 +400,7 @@ export default function SkyDomeView() {
     };
   }, [active, observerLocation, animate, updateLayout, updateStarCanvas, updatePassArcs]);
 
-  // Escape key handler
+  // escape key handler
   useEffect(() => {
     if (!active) return;
 
@@ -429,7 +415,7 @@ export default function SkyDomeView() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [active, setCameraMode]);
 
-  // Mouse interaction
+  // mouse interaction
   const handleMouseMove = useCallback((e) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -460,7 +446,7 @@ export default function SkyDomeView() {
 
   if (!active) return null;
 
-  // If no observer location, show prompt
+  // no observer location, show prompt
   if (!observerLocation) {
     return (
       <div

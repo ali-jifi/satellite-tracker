@@ -2,26 +2,19 @@ import { useCallback } from 'react';
 import useAppStore from '../stores/appStore';
 import useSatelliteStore from '../stores/satelliteStore';
 
-/**
- * Helper hook wrapping bookmark actions.
- * Provides next/prev cycling and toggle with stale-ID filtering.
- */
+// bookmark helper hook w/ next/prev cycling and stale-ID filtering
 export default function useBookmarks() {
   const bookmarks = useAppStore((s) => s.bookmarks);
   const toggleBookmark = useAppStore((s) => s.toggleBookmark);
   const setBookmarks = useAppStore((s) => s.setBookmarks);
 
-  /**
-   * Get valid bookmarks filtered against current satellite catalog.
-   */
+  // get valid bookmarks filtered against current catalog
   const getValidBookmarks = useCallback(() => {
     const satellites = useSatelliteStore.getState().satellites;
     return bookmarks.filter((id) => satellites.has(id));
   }, [bookmarks]);
 
-  /**
-   * Select next bookmarked satellite.
-   */
+  // select next bookmarked sat
   const nextBookmark = useCallback(() => {
     const valid = getValidBookmarks();
     if (valid.length === 0) return;
@@ -32,9 +25,7 @@ export default function useBookmarks() {
     useSatelliteStore.getState().setDetailSatelliteId(valid[next]);
   }, [getValidBookmarks]);
 
-  /**
-   * Select previous bookmarked satellite.
-   */
+  // select prev bookmarked sat
   const prevBookmark = useCallback(() => {
     const valid = getValidBookmarks();
     if (valid.length === 0) return;
@@ -45,9 +36,7 @@ export default function useBookmarks() {
     useSatelliteStore.getState().setDetailSatelliteId(valid[prev]);
   }, [getValidBookmarks]);
 
-  /**
-   * Remove stale bookmark IDs not present in the satellite catalog.
-   */
+  // remove stale bookmark IDs not in catalog
   const cleanStaleBookmarks = useCallback(() => {
     const valid = getValidBookmarks();
     if (valid.length !== bookmarks.length) {

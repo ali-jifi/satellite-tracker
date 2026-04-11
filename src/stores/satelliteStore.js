@@ -5,21 +5,21 @@ const MAX_SELECTED = 20;
 const MAX_SEARCH_RESULTS = 50;
 
 const useSatelliteStore = create((set, get) => ({
-  // === Catalog state ===
+  // === catalog state ===
   satellites: new Map(),
   satelliteArray: [],
   catalogLoaded: false,
   loadProgress: 0,
   lastFetchTime: null,
 
-  // === Search state ===
+  // === search state ===
   searchQuery: '',
   searchResults: [],
   fuseInstance: null,
 
   initFuse: () => {
     const arr = get().satelliteArray;
-    // Build search list with id as string so Fuse can match NORAD IDs
+    // id as string so Fuse can match NORAD IDs
     const searchList = arr.map((sat) => ({
       ...sat,
       idStr: String(sat.id),
@@ -50,7 +50,7 @@ const useSatelliteStore = create((set, get) => ({
     });
   },
 
-  // === Catalog actions ===
+  // === catalog actions ===
   addSatellites: (satArray) =>
     set((state) => {
       const updated = new Map(state.satellites);
@@ -61,7 +61,7 @@ const useSatelliteStore = create((set, get) => ({
         if (!updated.has(sat.id)) {
           updated.set(sat.id, sat);
 
-          // Category index
+          // category index
           if (sat.category) {
             if (!catIndex.has(sat.category)) {
               catIndex.set(sat.category, new Set());
@@ -69,7 +69,7 @@ const useSatelliteStore = create((set, get) => ({
             catIndex.get(sat.category).add(sat.id);
           }
 
-          // Country index
+          // country index
           if (sat.countryCode) {
             if (!cntIndex.has(sat.countryCode)) {
               cntIndex.set(sat.countryCode, new Set());
@@ -90,14 +90,14 @@ const useSatelliteStore = create((set, get) => ({
   setCatalogLoaded: (loaded) => {
     set({ catalogLoaded: loaded, lastFetchTime: loaded ? Date.now() : null });
     if (loaded) {
-      // Initialize Fuse.js search index once catalog is ready
+      // init Fuse.js search index once catalog ready
       get().initFuse();
     }
   },
 
   setLoadProgress: (count) => set({ loadProgress: count }),
 
-  // === Selection state (multi-select, max 20) ===
+  // === selection state (multi-select, max 20) ===
   selectedIds: new Set(),
 
   selectSatellite: (id) =>
@@ -133,30 +133,30 @@ const useSatelliteStore = create((set, get) => ({
 
   isSelected: (id) => get().selectedIds.has(id),
 
-  // === Filter state (solo mode) ===
+  // === filter state (solo mode) ===
   activeFilter: null,
 
   setFilter: (filter) => set({ activeFilter: filter }),
   clearFilter: () => set({ activeFilter: null }),
 
-  // === Color mode state ===
+  // === color mode state ===
   colorMode: 'inclination',
 
   setColorMode: (mode) => set({ colorMode: mode }),
 
-  // === Position buffer (from propagation worker) ===
+  // === position buffer (from propagation worker) ===
   positionBuffer: null,
   positionCount: 0,
 
   setPositionBuffer: (buffer, count) =>
     set({ positionBuffer: buffer, positionCount: count }),
 
-  // === Detail panel state ===
+  // === detail panel state ===
   detailSatelliteId: null,
   setDetailSatelliteId: (id) => set({ detailSatelliteId: id }),
   clearDetailSatelliteId: () => set({ detailSatelliteId: null }),
 
-  // === Category and country indexes ===
+  // === category & country indexes ===
   categoryIndex: new Map(),
   countryIndex: new Map(),
 }));

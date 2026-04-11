@@ -16,19 +16,19 @@ export default function ObserverLocation() {
 
   return (
     <>
-      {/* Backdrop */}
+      {/* backdrop */}
       <div
         className="fixed inset-0 z-40"
         style={{ background: 'rgba(0,0,0,0.4)' }}
         onClick={closeLocationPrompt}
       />
 
-      {/* Modal */}
+      {/* modal */}
       <div
         className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 glass rounded-xl p-5 fade-in"
         style={{ width: 360, maxHeight: '80vh', overflowY: 'auto' }}
       >
-        {/* Header */}
+        {/* header */}
         <div className="flex items-center justify-between mb-4">
           <h3
             className="text-[10px] tracking-[0.2em] uppercase"
@@ -45,7 +45,7 @@ export default function ObserverLocation() {
           </button>
         </div>
 
-        {/* Tabs */}
+        {/* tabs */}
         <div className="flex gap-1 mb-4">
           {TABS.map((tab, i) => (
             <button
@@ -63,7 +63,7 @@ export default function ObserverLocation() {
           ))}
         </div>
 
-        {/* Tab content */}
+        {/* tab content */}
         {activeTab === 0 && (
           <GPSTab setObserverLocation={setObserverLocation} />
         )}

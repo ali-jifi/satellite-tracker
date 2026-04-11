@@ -24,7 +24,7 @@ export default function TopBar() {
   const categoryIndex = useSatelliteStore((s) => s.categoryIndex);
   const countryIndex = useSatelliteStore((s) => s.countryIndex);
 
-  // Calculate filtered count when a filter is active
+  // calc filtered count when filter is active
   let displayCount = null;
   if (totalCount > 0) {
     if (activeFilter) {
@@ -44,7 +44,7 @@ export default function TopBar() {
 
   return (
     <div className="fixed top-3 left-1/2 -translate-x-1/2 z-40 glass rounded-full px-2 py-1.5 flex items-center gap-4">
-      {/* Hamburger / Close */}
+      {/* hamburger / close */}
       <button
         onClick={toggleMenu}
         className="p-1.5 rounded-full transition-colors duration-200 hover:bg-[var(--glass-hover)]"
@@ -57,7 +57,7 @@ export default function TopBar() {
         )}
       </button>
 
-      {/* Title */}
+      {/* title */}
       <span
         className="text-xs tracking-[0.25em] uppercase select-none"
         style={{ color: 'var(--accent)', fontWeight: 500 }}
@@ -65,7 +65,7 @@ export default function TopBar() {
         SATTRACKER
       </span>
 
-      {/* Satellite count */}
+      {/* sat count */}
       {displayCount && (
         <span
           className="text-[9px] tabular-nums select-none"
@@ -75,10 +75,10 @@ export default function TopBar() {
         </span>
       )}
 
-      {/* Divider */}
+      {/* divider */}
       <div className="w-px h-4 bg-[var(--text-secondary)] opacity-30" />
 
-      {/* Analysis tool buttons */}
+      {/* analysis tool btns */}
       <button
         onClick={toggleConstellationDashboard}
         className="p-1.5 rounded-full transition-colors duration-200 hover:bg-[var(--glass-hover)]"
@@ -120,10 +120,10 @@ export default function TopBar() {
         <Sun size={16} style={{ color: photobombPanelOpen ? 'var(--accent)' : 'var(--text-primary)' }} />
       </button>
 
-      {/* Divider */}
+      {/* divider */}
       <div className="w-px h-4 bg-[var(--text-secondary)] opacity-30" />
 
-      {/* Settings gear */}
+      {/* settings gear */}
       <button
         onClick={toggleSettings}
         className="p-1.5 rounded-full transition-colors duration-200 hover:bg-[var(--glass-hover)]"

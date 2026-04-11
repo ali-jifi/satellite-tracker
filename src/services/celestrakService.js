@@ -20,10 +20,7 @@ function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/**
- * Fetch a single CelesTrak satellite group in GP JSON format.
- * Returns parsed satellite objects or empty array on failure.
- */
+// fetch single CelesTrak sat group in GP JSON format, returns parsed sats or [] on failure
 export async function fetchSatelliteGroup(groupName) {
   const url = `${CELESTRAK_BASE}?GROUP=${groupName}&FORMAT=json`;
   try {
@@ -44,12 +41,7 @@ export async function fetchSatelliteGroup(groupName) {
   }
 }
 
-/**
- * Fetch all CelesTrak groups sequentially with rate-limit protection.
- * De-duplicates by NORAD ID (first occurrence wins).
- * @param {function} [onProgress] - Called with current total count after each group.
- * @returns {Promise<Map<number, object>>} Map of NORAD_CAT_ID -> satellite object.
- */
+// fetch all CelesTrak groups sequentially w/ rate-limit, dedupes by NORAD ID (first wins)
 export async function fetchAllSatellites(onProgress) {
   const catalog = new Map();
 
@@ -67,7 +59,7 @@ export async function fetchAllSatellites(onProgress) {
       onProgress(catalog.size);
     }
 
-    // Rate-limit delay between requests (skip after last group)
+    // rate-limit delay between reqs (skip after last group)
     if (i < GROUPS.length - 1) {
       await delay(DELAY_MS);
     }
@@ -76,12 +68,7 @@ export async function fetchAllSatellites(onProgress) {
   return catalog;
 }
 
-/**
- * Start background polling to refresh satellite data.
- * @param {function} refreshFn - Async function to call on each poll cycle.
- * @param {number} [intervalMs=7200000] - Poll interval (default 2 hours).
- * @returns {function} Cleanup function to stop polling.
- */
+// start bg polling to refresh sat data, returns cleanup fn
 export function startBackgroundPolling(refreshFn, intervalMs = 7_200_000) {
   const id = setInterval(refreshFn, intervalMs);
   return () => clearInterval(id);

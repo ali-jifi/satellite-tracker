@@ -82,14 +82,14 @@ export default function SearchBar() {
     enabled: useVirtual && showResults,
   });
 
-  // Cleanup debounce on unmount
+  // cleanup debounce on unmount
   useEffect(() => () => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
   }, []);
 
   return (
     <div className="mb-4">
-      {/* Input */}
+      {/* input */}
       <div className="relative">
         <Search
           size={13}
@@ -114,7 +114,7 @@ export default function SearchBar() {
         )}
       </div>
 
-      {/* Results */}
+      {/* results */}
       {showResults && (
         <div
           ref={parentRef}

@@ -3,11 +3,7 @@ import useAppStore from '../stores/appStore';
 import useAnalysisStore from '../stores/analysisStore';
 import { scheduleEventNotification } from './notificationService';
 
-/**
- * Get current simulation time in milliseconds.
- * Uses CesiumJS clock when available, falls back to wall-clock.
- * @returns {number}
- */
+// get current sim time in ms, uses CesiumJS clock or falls back to wall-clock
 function getSimTimeMs() {
   const viewer = useAppStore.getState().viewerRef;
   if (viewer && viewer.clock) {
@@ -16,21 +12,17 @@ function getSimTimeMs() {
   return Date.now();
 }
 
-// Active timeout IDs grouped by category for cleanup
+// active timeout IDs grouped by category for cleanup
 const activeTimeouts = {
   reentry: new Map(),
   closeApproach: new Map(),
   transit: new Map(),
 };
 
-// Zustand unsubscribe functions
+// zustand unsub fns
 const unsubscribers = [];
 
-/**
- * Format a millisecond duration as human-readable lead time.
- * @param {number} ms
- * @returns {string}
- */
+// format ms duration as human-readable lead time
 function formatLeadTime(ms) {
   const minutes = Math.round(ms / 60000);
   if (minutes < 1) return 'less than a minute';
@@ -41,10 +33,7 @@ function formatLeadTime(ms) {
   return `${hours} hours`;
 }
 
-/**
- * Clear all timeouts in a category map.
- * @param {Map} map
- */
+// clear all timeouts in a category map
 function clearCategory(map) {
   for (const timeoutId of map.values()) {
     clearInterval(timeoutId);
@@ -52,9 +41,7 @@ function clearCategory(map) {
   map.clear();
 }
 
-/**
- * Schedule re-entry notifications from current results.
- */
+// schedule re-entry notifs from current results
 function scheduleReentryNotifications() {
   const { reentryResults, notificationPrefs } = useAnalysisStore.getState();
   clearCategory(activeTimeouts.reentry);
@@ -88,9 +75,7 @@ function scheduleReentryNotifications() {
   }
 }
 
-/**
- * Schedule close approach notifications from current results.
- */
+// schedule close approach notifs from current results
 function scheduleCloseApproachNotifications() {
   const { closeApproachResults, notificationPrefs } = useAnalysisStore.getState();
   clearCategory(activeTimeouts.closeApproach);
@@ -101,7 +86,7 @@ function scheduleCloseApproachNotifications() {
   const now = getSimTimeMs();
 
   for (const entry of closeApproachResults) {
-    // time may be a ms timestamp or Date
+    // time may be ms timestamp or Date
     const eventTime = entry.time instanceof Date
       ? entry.time
       : new Date(entry.time);
@@ -126,9 +111,7 @@ function scheduleCloseApproachNotifications() {
   }
 }
 
-/**
- * Schedule photobomb transit notifications from current results.
- */
+// schedule photobomb transit notifs from current results
 function scheduleTransitNotifications() {
   const { transitResults, notificationPrefs } = useAnalysisStore.getState();
   clearCategory(activeTimeouts.transit);
@@ -162,16 +145,13 @@ function scheduleTransitNotifications() {
   }
 }
 
-// Track previous state references for change detection
+// prev state refs for change detection
 let prevReentryResults = null;
 let prevCloseApproachResults = null;
 let prevTransitResults = null;
 let prevNotificationPrefs = null;
 
-/**
- * Start the notification scheduler.
- * Subscribes to analysis store result changes and schedules notifications.
- */
+// start notif scheduler, subscribes to analysis store changes
 export function startNotificationScheduler() {
   const state = useAnalysisStore.getState();
   prevReentryResults = state.reentryResults;
@@ -179,7 +159,7 @@ export function startNotificationScheduler() {
   prevTransitResults = state.transitResults;
   prevNotificationPrefs = state.notificationPrefs;
 
-  // Single subscription with manual change detection
+  // single sub w/ manual change detection
   const unsub = useAnalysisStore.subscribe((state) => {
     let changed = false;
 
@@ -203,7 +183,7 @@ export function startNotificationScheduler() {
 
     if (state.notificationPrefs !== prevNotificationPrefs) {
       prevNotificationPrefs = state.notificationPrefs;
-      // Reschedule all categories when prefs change
+      // reschedule all categories when prefs change
       if (!changed) {
         scheduleReentryNotifications();
         scheduleCloseApproachNotifications();
@@ -214,16 +194,13 @@ export function startNotificationScheduler() {
 
   unsubscribers.push(unsub);
 
-  // Initial schedule from any existing results
+  // init schedule from any existing results
   scheduleReentryNotifications();
   scheduleCloseApproachNotifications();
   scheduleTransitNotifications();
 }
 
-/**
- * Stop the notification scheduler.
- * Clears all timeouts and unsubscribes from store.
- */
+// stop notif scheduler, clears all timeouts and unsubs from store
 export function stopNotificationScheduler() {
   clearCategory(activeTimeouts.reentry);
   clearCategory(activeTimeouts.closeApproach);

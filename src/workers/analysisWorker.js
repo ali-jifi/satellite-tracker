@@ -1,11 +1,7 @@
 import * as satellite from 'satellite.js';
 
-/**
- * Analysis Web Worker - handles heavy computation off the main thread.
- * Currently supports close approach detection.
- *
- * Receives TLE strings (not satrec objects) since satrecs can't be transferred to workers.
- */
+// analysis web worker - heavy computation off main thread
+// receives TLE strings (not satrec objs) since satrecs aren't transferable
 
 self.onmessage = function (e) {
   const { type } = e.data;
@@ -19,9 +15,7 @@ self.onmessage = function (e) {
   }
 };
 
-/**
- * Propagate a satrec to ECI position/velocity.
- */
+// propagate satrec to ECI pos/vel
 function propagateEci(satrec, date) {
   try {
     const posVel = satellite.propagate(satrec, date);
@@ -32,9 +26,7 @@ function propagateEci(satrec, date) {
   }
 }
 
-/**
- * Compute ECI distance between two satrecs at a date.
- */
+// compute ECI distance between two satrecs at a date
 function workerComputeDistance(satrec1, satrec2, date) {
   const pv1 = propagateEci(satrec1, date);
   const pv2 = propagateEci(satrec2, date);
@@ -46,10 +38,7 @@ function workerComputeDistance(satrec1, satrec2, date) {
   return Math.sqrt(dx * dx + dy * dy + dz * dz);
 }
 
-/**
- * Handle close approach detection.
- * @param {{ referenceTle: {line1, line2, id, name}, candidateTles: Array<{line1, line2, id, name}>, options: object }} data
- */
+// handle close approach detection
 function handleCloseApproaches(data) {
   const { referenceTle, candidateTles, options = {} } = data;
   const {
@@ -58,7 +47,7 @@ function handleCloseApproaches(data) {
     startTime = Date.now(),
   } = options;
 
-  // Parse satrecs from TLE strings
+  // parse satrecs from TLE strings
   let refSatrec;
   try {
     refSatrec = satellite.twoline2satrec(referenceTle.line1, referenceTle.line2);
@@ -73,7 +62,7 @@ function handleCloseApproaches(data) {
       const satrec = satellite.twoline2satrec(tle.line1, tle.line2);
       candidates.push({ id: tle.id, name: tle.name, satrec });
     } catch {
-      // Skip invalid TLEs
+      // skip invalid TLEs
     }
   }
 
@@ -89,7 +78,7 @@ function handleCloseApproaches(data) {
   for (let i = 0; i < candidates.length; i++) {
     const cand = candidates[i];
 
-    // Report progress
+    // report progress
     if (i % progressInterval === 0) {
       self.postMessage({
         type: 'progress',
@@ -97,7 +86,7 @@ function handleCloseApproaches(data) {
       });
     }
 
-    // Phase 1: Coarse scan
+    // phase 1: coarse scan
     let minDist = Infinity;
     let minTime = startMs;
 
@@ -112,7 +101,7 @@ function handleCloseApproaches(data) {
 
     if (minDist > thresholdKm) continue;
 
-    // Phase 2: Fine refinement
+    // phase 2: fine refinement
     const fineStart = Math.max(startMs, minTime - fineWindowMs);
     const fineEnd = Math.min(endMs, minTime + fineWindowMs);
 
@@ -125,7 +114,7 @@ function handleCloseApproaches(data) {
       }
     }
 
-    // Compute relative velocity at closest approach
+    // compute relative velocity at closest approach
     const approachDate = new Date(minTime);
     const refPv = propagateEci(refSatrec, approachDate);
     const candPv = propagateEci(cand.satrec, approachDate);

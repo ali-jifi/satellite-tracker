@@ -8,7 +8,7 @@ const DEFAULT_NOTIFICATION_PREFS = {
 };
 
 const useAnalysisStore = create((set) => ({
-  // Panel visibility (mutually exclusive)
+  // panel visibility (mutually exclusive)
   reentryPanelOpen: false,
   closeApproachPanelOpen: false,
   tleAnalyzerOpen: false,
@@ -65,7 +65,7 @@ const useAnalysisStore = create((set) => ({
       constellationDashboardOpen: false,
     }),
 
-  // Result state
+  // result state
   reentryResults: [],
   closeApproachResults: [],
   transitResults: [],
@@ -73,7 +73,7 @@ const useAnalysisStore = create((set) => ({
   highlightedConstellation: null,
   closeApproachVisualization: null,
 
-  // Computing flags
+  // computing flags
   reentryComputing: false,
   closeApproachComputing: false,
   transitComputing: false,
@@ -90,7 +90,7 @@ const useAnalysisStore = create((set) => ({
 
   clearCloseApproachVisualization: () => set({ closeApproachVisualization: null }),
 
-  // Close approach progress (0-100)
+  // close approach progress (0-100)
   closeApproachProgress: 0,
   setCloseApproachProgress: (p) => set({ closeApproachProgress: p }),
 
@@ -98,7 +98,7 @@ const useAnalysisStore = create((set) => ({
   setCloseApproachComputing: (v) => set({ closeApproachComputing: v }),
   setTransitComputing: (v) => set({ transitComputing: v }),
 
-  // Notification preferences (persisted to localStorage)
+  // notification prefs (persisted to localStorage)
   notificationPrefs: JSON.parse(
     localStorage.getItem('sat-notification-prefs') ||
       JSON.stringify(DEFAULT_NOTIFICATION_PREFS)

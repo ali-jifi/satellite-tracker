@@ -4,17 +4,12 @@ import useAppStore from '../../stores/appStore';
 import useSatelliteStore from '../../stores/satelliteStore';
 import { getColorForSatelliteRaw, isDebris } from '../../utils/colorModes';
 
-/**
- * SatelliteRenderer — renders 30k+ satellites as PointPrimitives.
- *
- * All position updates are imperative (refs + requestAnimationFrame).
- * Component renders null. No React state for positions.
- */
+// renders 30k+ sats as PointPrimitives, imperative updates via refs + rAF, renders null
 export default function SatelliteRenderer() {
   const collectionRef = useRef(null);
-  const pointIndexMapRef = useRef(new Map()); // noradId -> point index
-  const pointArrayRef = useRef([]);           // flat array of point primitives
-  const satLookupRef = useRef(new Map());     // noradId -> satellite object (for recoloring)
+  const pointIndexMapRef = useRef(new Map()); // noradId -> point idx
+  const pointArrayRef = useRef([]);           // flat arr of point primitives
+  const satLookupRef = useRef(new Map());     // noradId -> sat obj (for recoloring)
   const handlerRef = useRef(null);
   const rafIdRef = useRef(null);
   const lastBufferRef = useRef(null);
@@ -27,12 +22,12 @@ export default function SatelliteRenderer() {
     const viewer = useAppStore.getState().viewerRef;
     if (!viewer || viewer.isDestroyed()) return;
 
-    // Create PointPrimitiveCollection
+    // create PointPrimitiveCollection
     const collection = new Cesium.PointPrimitiveCollection();
     viewer.scene.primitives.add(collection);
     collectionRef.current = collection;
 
-    // Track whether we've built points yet
+    // track whether we've built points yet
     let pointsBuilt = false;
 
     function buildPoints() {
@@ -53,7 +48,7 @@ export default function SatelliteRenderer() {
           position: Cesium.Cartesian3.ZERO,
           pixelSize: 2.0,
           color: new Cesium.Color(rawColor.red, rawColor.green, rawColor.blue, 1.0),
-          show: false, // hidden until first position update
+          show: false, // hidden until first pos update
           id: sat.id,
         });
 
@@ -67,12 +62,12 @@ export default function SatelliteRenderer() {
       satLookupRef.current = satLookup;
     }
 
-    // Try building immediately if catalog already loaded
+    // try building immediately if catalog already loaded
     if (useSatelliteStore.getState().catalogLoaded) {
       buildPoints();
     }
 
-    // Subscribe to catalogLoaded changes
+    // sub to catalogLoaded changes
     let prevCatalogLoaded = useSatelliteStore.getState().catalogLoaded;
     unsubCatalogRef.current = useSatelliteStore.subscribe((state) => {
       if (state.catalogLoaded && !prevCatalogLoaded) {
@@ -81,7 +76,7 @@ export default function SatelliteRenderer() {
       }
     });
 
-    // Position update loop via requestAnimationFrame
+    // pos update loop via rAF
     const scratchCartesian = new Cesium.Cartesian3();
 
     function updatePositions() {
@@ -105,7 +100,7 @@ export default function SatelliteRenderer() {
         const id = positionBuffer[offset];
         const lat = positionBuffer[offset + 1];
         const lon = positionBuffer[offset + 2];
-        const alt = positionBuffer[offset + 3]; // km
+        const alt = positionBuffer[offset + 3]; // in km
 
         const idx = indexMap.get(id);
         if (idx === undefined) continue;
@@ -113,13 +108,13 @@ export default function SatelliteRenderer() {
         const point = pointArr[idx];
         if (!point) continue;
 
-        // Hide if selected (SelectedSatelliteManager handles rendering)
+        // hide if selected (SelectedSatelliteManager handles rendering)
         if (selectedIds.has(id)) {
           point.show = false;
           continue;
         }
 
-        // Hide debris when debrisVisible is off
+        // hide debris when debrisVisible is off
         if (debrisHidden) {
           const sat = satLookup.get(id);
           if (sat && isDebris(sat)) {
@@ -136,7 +131,7 @@ export default function SatelliteRenderer() {
 
     rafIdRef.current = requestAnimationFrame(updatePositions);
 
-    // Click-to-select via ScreenSpaceEventHandler
+    // click-to-select via ScreenSpaceEventHandler
     const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
     handlerRef.current = handler;
 
@@ -144,13 +139,13 @@ export default function SatelliteRenderer() {
       const picked = viewer.scene.pick(event.position);
       if (!picked || !picked.primitive) return;
 
-      // Check if the picked primitive belongs to our collection
+      // check if picked primitive belongs to our collection
       if (picked.collection === collection && picked.primitive.id !== undefined) {
         useSatelliteStore.getState().toggleSatellite(picked.primitive.id);
       }
     }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
-    // Filter reactivity — show/hide points based on activeFilter
+    // filter reactivity - show/hide points based on activeFilter
     let prevFilter = useSatelliteStore.getState().activeFilter;
     unsubFilterRef.current = useSatelliteStore.subscribe((state) => {
       if (state.activeFilter === prevFilter) return;
@@ -176,7 +171,7 @@ export default function SatelliteRenderer() {
       }
     });
 
-    // Color mode reactivity — recolor all points
+    // color mode reactivity - recolor all points
     let prevColorMode = useSatelliteStore.getState().colorMode;
     unsubColorRef.current = useSatelliteStore.subscribe((state) => {
       if (state.colorMode === prevColorMode) return;
@@ -197,7 +192,7 @@ export default function SatelliteRenderer() {
       }
     });
 
-    // Debris visibility reactivity — immediately hide/show debris points
+    // debris visibility reactivity - immediately hide/show debris points
     let prevDebrisVisible = useAppStore.getState().debrisVisible;
     unsubDebrisRef.current = useAppStore.subscribe((state) => {
       if (state.debrisVisible === prevDebrisVisible) return;
@@ -219,7 +214,7 @@ export default function SatelliteRenderer() {
       }
     });
 
-    // Cleanup
+    // cleanup
     return () => {
       if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
       if (handlerRef.current) {
@@ -240,10 +235,7 @@ export default function SatelliteRenderer() {
   return null;
 }
 
-/**
- * Check if satellite matches the active filter.
- * Filters can be: { type: 'category', value: 'starlink' } or { type: 'country', value: 'US' }
- */
+// check if sat matches active filter (category, country, or objectType)
 function matchesFilter(sat, filter) {
   if (!filter) return true;
 
