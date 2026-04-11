@@ -1,5 +1,20 @@
+import { JulianDate } from 'cesium';
+import useAppStore from '../stores/appStore';
 import useAnalysisStore from '../stores/analysisStore';
 import { scheduleEventNotification } from './notificationService';
+
+/**
+ * Get current simulation time in milliseconds.
+ * Uses CesiumJS clock when available, falls back to wall-clock.
+ * @returns {number}
+ */
+function getSimTimeMs() {
+  const viewer = useAppStore.getState().viewerRef;
+  if (viewer && viewer.clock) {
+    return JulianDate.toDate(viewer.clock.currentTime).getTime();
+  }
+  return Date.now();
+}
 
 // Active timeout IDs grouped by category for cleanup
 const activeTimeouts = {
@@ -32,7 +47,7 @@ function formatLeadTime(ms) {
  */
 function clearCategory(map) {
   for (const timeoutId of map.values()) {
-    clearTimeout(timeoutId);
+    clearInterval(timeoutId);
   }
   map.clear();
 }
@@ -47,7 +62,7 @@ function scheduleReentryNotifications() {
   if (!notificationPrefs.reentryEnabled) return;
 
   const leadTimeMs = notificationPrefs.leadTimeMinutes * 60000;
-  const now = Date.now();
+  const now = getSimTimeMs();
 
   for (const entry of reentryResults) {
     const eventTime = entry.predictedDate instanceof Date
@@ -83,7 +98,7 @@ function scheduleCloseApproachNotifications() {
   if (!notificationPrefs.closeApproachEnabled) return;
 
   const leadTimeMs = notificationPrefs.leadTimeMinutes * 60000;
-  const now = Date.now();
+  const now = getSimTimeMs();
 
   for (const entry of closeApproachResults) {
     // time may be a ms timestamp or Date
@@ -121,7 +136,7 @@ function scheduleTransitNotifications() {
   if (!notificationPrefs.photobombEnabled) return;
 
   const leadTimeMs = notificationPrefs.leadTimeMinutes * 60000;
-  const now = Date.now();
+  const now = getSimTimeMs();
 
   for (const entry of transitResults) {
     const eventTime = entry.time instanceof Date
