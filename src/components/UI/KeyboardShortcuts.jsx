@@ -63,22 +63,24 @@ export default function KeyboardShortcuts() {
       }
     },
     'n': () => {
-      // Next bookmark -- handled by bookmark cycling in appStore
+      // Next bookmark -- filter out stale IDs not in current catalog
       const { bookmarks } = useAppStore.getState();
-      const { detailSatelliteId, setDetailSatelliteId } = useSatelliteStore.getState();
-      if (bookmarks.length === 0) return;
-      const idx = detailSatelliteId != null ? bookmarks.indexOf(detailSatelliteId) : -1;
-      const next = (idx + 1) % bookmarks.length;
-      setDetailSatelliteId(bookmarks[next]);
+      const { satellites, detailSatelliteId, setDetailSatelliteId } = useSatelliteStore.getState();
+      const valid = bookmarks.filter((id) => satellites.has(id));
+      if (valid.length === 0) return;
+      const idx = detailSatelliteId != null ? valid.indexOf(detailSatelliteId) : -1;
+      const next = (idx + 1) % valid.length;
+      setDetailSatelliteId(valid[next]);
     },
     'p': () => {
-      // Previous bookmark
+      // Previous bookmark -- filter out stale IDs not in current catalog
       const { bookmarks } = useAppStore.getState();
-      const { detailSatelliteId, setDetailSatelliteId } = useSatelliteStore.getState();
-      if (bookmarks.length === 0) return;
-      const idx = detailSatelliteId != null ? bookmarks.indexOf(detailSatelliteId) : -1;
-      const prev = idx <= 0 ? bookmarks.length - 1 : idx - 1;
-      setDetailSatelliteId(bookmarks[prev]);
+      const { satellites, detailSatelliteId, setDetailSatelliteId } = useSatelliteStore.getState();
+      const valid = bookmarks.filter((id) => satellites.has(id));
+      if (valid.length === 0) return;
+      const idx = detailSatelliteId != null ? valid.indexOf(detailSatelliteId) : -1;
+      const prev = idx <= 0 ? valid.length - 1 : idx - 1;
+      setDetailSatelliteId(valid[prev]);
     },
 
     // HUD toggle (POV mode)
