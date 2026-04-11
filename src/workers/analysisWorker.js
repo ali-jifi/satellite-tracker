@@ -2,7 +2,7 @@ import * as satellite from 'satellite.js';
 
 /**
  * Analysis Web Worker - handles heavy computation off the main thread.
- * Currently supports close approach detection. Future: reentry scanning, transit prediction.
+ * Currently supports close approach detection.
  *
  * Receives TLE strings (not satrec objects) since satrecs can't be transferred to workers.
  */
@@ -13,14 +13,6 @@ self.onmessage = function (e) {
   switch (type) {
     case 'findCloseApproaches':
       handleCloseApproaches(e.data);
-      break;
-    case 'scanReentries':
-      // Future: reentry scanning
-      self.postMessage({ type: 'reentryResults', results: [] });
-      break;
-    case 'predictTransits':
-      // Future: transit prediction
-      self.postMessage({ type: 'transitResults', results: [] });
       break;
     default:
       console.warn(`[AnalysisWorker] Unknown message type: ${type}`);
