@@ -12,7 +12,9 @@ dist
 dist-ssr
 *.local
 
+#claude and planning files
 .claude
+/CLAUDE.md
 .planning
 
 QUICKSTART.md
