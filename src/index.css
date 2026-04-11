@@ -21,6 +21,22 @@
   --font-mono: 'JetBrains Mono', monospace;
 }
 
+[data-theme="light"] {
+  --glass-bg: rgba(240, 243, 249, 0.85);
+  --glass-border: rgba(0, 180, 130, 0.18);
+  --glass-hover: rgba(0, 180, 130, 0.08);
+  --accent: #0d9b76;
+  --accent-dim: rgba(13, 155, 118, 0.5);
+  --accent-glow: rgba(13, 155, 118, 0.12);
+  --cyan: #0891b2;
+  --danger: #e11d48;
+  --warn: #d97706;
+  --surface: #f0f3f9;
+  --text-primary: #1a1f2e;
+  --text-secondary: #5a6577;
+  --text-tertiary: #8b95a8;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -33,7 +49,7 @@ html, body, #root {
   overflow: hidden;
   margin: 0;
   padding: 0;
-  background: #000;
+  background: var(--surface);
   font-family: var(--font-mono);
   color: var(--text-primary);
 }
@@ -47,7 +63,7 @@ html, body, #root {
 }
 
 .glass-solid {
-  background: rgba(8, 12, 21, 0.92);
+  background: var(--glass-bg);
   backdrop-filter: blur(24px) saturate(1.4);
   -webkit-backdrop-filter: blur(24px) saturate(1.4);
   border: 1px solid var(--glass-border);

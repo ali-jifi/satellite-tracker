@@ -91,11 +91,26 @@ const useAppStore = create((set, get) => ({
     set({ bookmarks: next });
   },
 
+  // Theme state (persisted to localStorage)
+  theme: localStorage.getItem('sat-tracker-theme') || 'dark',
+  setTheme: (theme) => {
+    set({ theme });
+    localStorage.setItem('sat-tracker-theme', theme);
+    document.documentElement.setAttribute('data-theme', theme);
+  },
+  toggleTheme: () => {
+    const next = get().theme === 'dark' ? 'light' : 'dark';
+    get().setTheme(next);
+  },
+
   // Space-Track credentials
   spaceTrackCredentials: null,
   setSpaceTrackCredentials: (creds) => set({ spaceTrackCredentials: creds }),
   spaceTrackEnabled: false,
   setSpaceTrackEnabled: (enabled) => set({ spaceTrackEnabled: enabled }),
 }));
+
+// Apply initial theme to DOM on store creation
+document.documentElement.setAttribute('data-theme', useAppStore.getState().theme);
 
 export default useAppStore;
