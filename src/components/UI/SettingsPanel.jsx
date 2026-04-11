@@ -13,7 +13,7 @@ function ToggleSwitch({ enabled, onToggle, disabled = false }) {
         disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'
       }`}
       style={{
-        background: enabled ? 'var(--accent)' : 'rgba(255,255,255,0.12)',
+        background: enabled ? 'var(--accent)' : 'var(--glass-border)',
       }}
       aria-label="Toggle"
     >
@@ -31,7 +31,7 @@ function StatusDot({ active }) {
   return (
     <span
       className="inline-block w-1.5 h-1.5 rounded-full mr-1.5"
-      style={{ background: active ? '#38f3bf' : 'rgba(255,255,255,0.3)' }}
+      style={{ background: active ? 'var(--accent)' : 'var(--text-tertiary)' }}
     />
   );
 }
@@ -86,8 +86,8 @@ function SpaceTrackSection() {
   };
 
   const inputStyle = {
-    background: 'rgba(255,255,255,0.06)',
-    border: '1px solid rgba(255,255,255,0.1)',
+    background: 'var(--glass-hover)',
+    border: '1px solid var(--glass-border)',
     color: 'var(--text-primary)',
   };
 
@@ -194,6 +194,8 @@ export default function SettingsPanel() {
   const toggleClouds = useAppStore((s) => s.toggleClouds);
   const globeStyle = useAppStore((s) => s.globeStyle);
   const setGlobeStyle = useAppStore((s) => s.setGlobeStyle);
+  const theme = useAppStore((s) => s.theme);
+  const toggleTheme = useAppStore((s) => s.toggleTheme);
 
   if (!settingsOpen) return null;
 
@@ -209,6 +211,23 @@ export default function SettingsPanel() {
       >
         SETTINGS
       </h3>
+
+      {/* Appearance section */}
+      <h3
+        className="text-[10px] tracking-[0.2em] uppercase mb-3"
+        style={{ color: 'var(--accent)', fontWeight: 600 }}
+      >
+        APPEARANCE
+      </h3>
+      <div className="flex items-center justify-between">
+        <span className="text-xs" style={{ color: 'var(--text-primary)' }}>
+          Dark Mode
+        </span>
+        <ToggleSwitch enabled={theme === 'dark'} onToggle={toggleTheme} />
+      </div>
+
+      {/* Appearance divider */}
+      <div className="my-4" style={{ borderTop: '1px solid var(--glass-border)' }} />
 
       {/* Setting items */}
       <div className="space-y-3">
@@ -278,7 +297,7 @@ export default function SettingsPanel() {
       </div>
 
       {/* Globe Style divider */}
-      <div className="my-4" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }} />
+      <div className="my-4" style={{ borderTop: '1px solid var(--glass-border)' }} />
 
       {/* Globe Style section */}
       <h3
@@ -298,7 +317,7 @@ export default function SettingsPanel() {
             onClick={() => setGlobeStyle(key)}
             className="flex-1 text-[10px] py-1.5 rounded-full cursor-pointer transition-colors duration-200"
             style={{
-              background: globeStyle === key ? 'var(--accent)' : 'rgba(255,255,255,0.08)',
+              background: globeStyle === key ? 'var(--accent)' : 'var(--glass-hover)',
               color: globeStyle === key ? '#0a0e17' : 'var(--text-secondary)',
               fontWeight: globeStyle === key ? 600 : 400,
             }}
@@ -309,7 +328,7 @@ export default function SettingsPanel() {
       </div>
 
       {/* Data Sources divider */}
-      <div className="my-4" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }} />
+      <div className="my-4" style={{ borderTop: '1px solid var(--glass-border)' }} />
 
       {/* Data Sources section */}
       <h3
@@ -334,7 +353,7 @@ export default function SettingsPanel() {
       </div>
 
       {/* Notifications divider */}
-      <div className="my-4" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }} />
+      <div className="my-4" style={{ borderTop: '1px solid var(--glass-border)' }} />
 
       {/* Notifications section */}
       <h3
