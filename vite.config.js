@@ -15,22 +15,27 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/api\/spacetrack/, ''),
         configure: (proxy, options) => {
           proxy.on('proxyReq', (proxyReq, req, res) => {
-            // add headers for Space-Track.org
             proxyReq.setHeader('User-Agent', 'Mozilla/5.0');
-
-            // fwd cookies from browser
             if (req.headers.cookie) {
               proxyReq.setHeader('Cookie', req.headers.cookie);
             }
           });
-
           proxy.on('proxyRes', (proxyRes, req, res) => {
-            // fwd set-cookie headers back to browser
             if (proxyRes.headers['set-cookie']) {
               res.setHeader('Set-Cookie', proxyRes.headers['set-cookie']);
             }
           });
         }
+      },
+      '/api/satnogs': {
+        target: 'https://db.satnogs.org',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/satnogs/, ''),
+      },
+      '/api/tle': {
+        target: 'https://tle.ivanstanojevic.me',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/tle/, ''),
       }
     }
   }

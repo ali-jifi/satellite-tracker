@@ -18,6 +18,7 @@ import ConstellationDashboard from './components/UI/ConstellationDashboard';
 import PhotobombPanel from './components/UI/PhotobombPanel';
 import CloseApproachPanel from './components/UI/CloseApproachPanel';
 import ToastContainer from './components/UI/ToastContainer';
+import SelectedPanel from './components/UI/SelectedPanel';
 import AnalysisVisualizationManager from './components/Globe/AnalysisVisualizationManager';
 import { startNotificationScheduler, stopNotificationScheduler } from './services/notificationScheduler';
 import useUrlSync from './hooks/useUrlSync';
@@ -70,6 +71,7 @@ function App() {
         <>
           <SatelliteRenderer />
           <SelectedSatelliteManager />
+          <SelectedPanel />
           <CameraManager />
           <MenuDrawer />
           <SettingsPanel />

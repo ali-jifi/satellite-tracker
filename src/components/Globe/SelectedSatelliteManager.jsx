@@ -18,9 +18,26 @@ export default function SelectedSatelliteManager() {
   const unsubLabelsRef = useRef(null);
   const unsubVisibilityRef = useRef(null);
 
+  const clickHandlerRef = useRef(null);
+
   useEffect(() => {
     const viewer = useAppStore.getState().viewerRef;
     if (!viewer || viewer.isDestroyed()) return;
+
+    // click handler to deselect selected sats when clicking their entity
+    const clickHandler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+    clickHandlerRef.current = clickHandler;
+    clickHandler.setInputAction((event) => {
+      const picked = viewer.scene.pick(event.position);
+      if (!picked || !picked.id) return;
+      const entityId = typeof picked.id === 'string' ? picked.id : picked.id.id;
+      if (!entityId || !entityId.startsWith('sat-point-')) return;
+      const noradId = parseInt(entityId.replace('sat-point-', ''), 10);
+      if (isNaN(noradId)) return;
+      if (useSatelliteStore.getState().selectedIds.has(noradId)) {
+        useSatelliteStore.getState().toggleSatellite(noradId);
+      }
+    }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
     let prevSelectedIds = new Set(useSatelliteStore.getState().selectedIds);
 
@@ -112,6 +129,10 @@ export default function SelectedSatelliteManager() {
     }, ORBIT_REFRESH_MS);
 
     return () => {
+      if (clickHandlerRef.current) {
+        clickHandlerRef.current.destroy();
+        clickHandlerRef.current = null;
+      }
       if (unsubRef.current) unsubRef.current();
       if (unsubLabelsRef.current) unsubLabelsRef.current();
       if (unsubVisibilityRef.current) unsubVisibilityRef.current();
@@ -203,7 +224,7 @@ function addEntity(viewer, noradId, entityMap) {
     },
   });
 
-  // orbit polyline
+  // orbit ring polyline
   const orbitPositions = computeOrbitPositions(sat);
   if (orbitPositions.length > 0) {
     viewer.entities.add({
@@ -211,8 +232,9 @@ function addEntity(viewer, noradId, entityMap) {
       show: orbitLinesVisible,
       polyline: {
         positions: orbitPositions,
-        width: 1.5,
-        material: satColor.withAlpha(0.7),
+        width: 1.0,
+        material: satColor.withAlpha(0.5),
+        followSurface: false,
       },
     });
   }
@@ -386,7 +408,7 @@ function updateGroundTracks(viewer, noradId, entityMap) {
   entry.groundTrackIds = createGroundTrackEntities(viewer, noradId, sat, satColor, groundTracksVisible);
 }
 
-// compute ~360 positions for one full orbit, uses sim time from CesiumJS clock
+// compute full orbit ring using a frozen GMST so the ring closes cleanly
 function computeOrbitPositions(sat) {
   if (!sat.tle1 || !sat.tle2) return [];
 
@@ -395,11 +417,14 @@ function computeOrbitPositions(sat) {
     const periodMinutes = sat.period || 90;
     const periodMs = periodMinutes * 60 * 1000;
     const now = getSimTimeMs();
+    const nowDate = new Date(now);
+    // freeze GMST at current time so all points share the same ECI->ECEF rotation
+    const gmst = satellite.gstime(nowDate);
+    const start = now - periodMs / 2;
     const positions = [];
 
-    for (let i = 0; i <= ORBIT_POINTS; i++) {
-      const t = new Date(now + (i / ORBIT_POINTS) * periodMs);
-      const gmst = satellite.gstime(t);
+    for (let i = 0; i < ORBIT_POINTS; i++) {
+      const t = new Date(start + (i / ORBIT_POINTS) * periodMs);
       const posVel = satellite.propagate(satrec, t);
 
       if (!posVel.position || typeof posVel.position !== 'object') continue;
@@ -410,6 +435,11 @@ function computeOrbitPositions(sat) {
       const alt = geo.height * 1000;
 
       positions.push(Cesium.Cartesian3.fromDegrees(lon, lat, alt));
+    }
+
+    // close the ring
+    if (positions.length > 2) {
+      positions.push(positions[0]);
     }
 
     return positions;

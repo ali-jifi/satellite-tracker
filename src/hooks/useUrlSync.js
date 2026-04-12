@@ -19,7 +19,7 @@ export default function useUrlSync() {
     }
   }, []);
 
-  // resolve pending ID when catalog loads
+  // resolve pending id when catalog loads
   useEffect(() => {
     if (!catalogLoaded || pendingIdRef.current == null) return;
 

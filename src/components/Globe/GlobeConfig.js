@@ -27,13 +27,13 @@ export const REVEAL_DURATION = 2.5; // sec
 // globe style configs
 export const GLOBE_STYLES = {
   photo: {
-    tileUrl: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    tileUrl: 'https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png',
     baseColor: '#131b2e',
     enableLighting: true,
     tileAlpha: 1.0,
   },
   daynight: {
-    tileUrl: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    tileUrl: 'https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png',
     baseColor: '#131b2e',
     enableLighting: true,
     tileAlpha: 1.0,

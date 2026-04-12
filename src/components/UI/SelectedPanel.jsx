@@ -1,10 +1,9 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { X, Info, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
+import { useState, useCallback, useRef, useEffect } from 'react';
+import { X, Info } from 'lucide-react';
 import useSatelliteStore from '../../stores/satelliteStore';
 import { CATEGORY_COLORS } from '../../utils/colorModes.js';
 
 const MAX_SELECTED = 20;
-const STRIDE = 5;
 
 function SelectedSatelliteRow({ satellite, onDeselect }) {
   const detailSatelliteId = useSatelliteStore((s) => s.detailSatelliteId);
@@ -21,43 +20,41 @@ function SelectedSatelliteRow({ satellite, onDeselect }) {
   };
 
   return (
-    <div className="mb-0.5">
-      <div className="flex items-center gap-1.5 px-2 py-1.5 rounded hover:bg-[var(--glass-hover)] transition-colors duration-100">
-        {/* color dot */}
-        <span
-          className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-          style={{ backgroundColor: color }}
+    <div className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-[var(--glass-hover)] transition-colors duration-100 group">
+      {/* color dot */}
+      <span
+        className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+        style={{ backgroundColor: color }}
+      />
+
+      {/* name */}
+      <span
+        className="text-[11px] flex-1 truncate cursor-default"
+        style={{ color: 'var(--text-primary)' }}
+      >
+        {satellite.name}
+      </span>
+
+      {/* info toggle */}
+      <button
+        onClick={handleInfoClick}
+        className="p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-[var(--glass-hover)] transition-opacity"
+        title="Satellite detail"
+      >
+        <Info
+          size={11}
+          style={{ color: isDetailActive ? 'var(--accent)' : 'var(--text-secondary)' }}
         />
+      </button>
 
-        {/* name */}
-        <span
-          className="text-[11px] flex-1 truncate"
-          style={{ color: 'var(--text-primary)' }}
-        >
-          {satellite.name}
-        </span>
-
-        {/* info toggle */}
-        <button
-          onClick={handleInfoClick}
-          className="p-0.5 rounded hover:bg-[var(--glass-hover)]"
-          title="Satellite detail"
-        >
-          <Info
-            size={11}
-            style={{ color: isDetailActive ? 'var(--accent)' : 'var(--text-secondary)' }}
-          />
-        </button>
-
-        {/* deselect */}
-        <button
-          onClick={() => onDeselect(satellite.id)}
-          className="p-0.5 rounded hover:bg-[var(--glass-hover)]"
-          title="Deselect"
-        >
-          <X size={11} style={{ color: 'var(--text-secondary)' }} />
-        </button>
-      </div>
+      {/* deselect */}
+      <button
+        onClick={() => onDeselect(satellite.id)}
+        className="p-0.5 rounded hover:bg-[var(--glass-hover)]"
+        title="Deselect"
+      >
+        <X size={11} style={{ color: 'var(--text-secondary)' }} />
+      </button>
     </div>
   );
 }
@@ -68,8 +65,13 @@ export default function SelectedPanel() {
   const deselectSatellite = useSatelliteStore((s) => s.deselectSatellite);
   const clearSelection = useSatelliteStore((s) => s.clearSelection);
 
+  // drag state
+  const [pos, setPos] = useState({ x: 16, y: 64 });
+  const dragging = useRef(false);
+  const dragOffset = useRef({ x: 0, y: 0 });
+  const cardRef = useRef(null);
+
   const handleDeselect = useCallback((id) => {
-    // if detail panel shows this sat, close it
     if (useSatelliteStore.getState().detailSatelliteId === id) {
       useSatelliteStore.getState().clearDetailSatelliteId();
     }
@@ -81,6 +83,27 @@ export default function SelectedPanel() {
     clearSelection();
   }, [clearSelection]);
 
+  // drag handlers
+  const onPointerDown = useCallback((e) => {
+    // only drag from the header area
+    if (e.target.closest('button')) return;
+    dragging.current = true;
+    dragOffset.current = { x: e.clientX - pos.x, y: e.clientY - pos.y };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  }, [pos]);
+
+  const onPointerMove = useCallback((e) => {
+    if (!dragging.current) return;
+    setPos({
+      x: e.clientX - dragOffset.current.x,
+      y: e.clientY - dragOffset.current.y,
+    });
+  }, []);
+
+  const onPointerUp = useCallback(() => {
+    dragging.current = false;
+  }, []);
+
   const count = selectedIds.size;
   if (count === 0) return null;
 
@@ -91,27 +114,42 @@ export default function SelectedPanel() {
   }
 
   return (
-    <div className="mb-4">
-      {/* header */}
-      <div className="flex items-center justify-between mb-2">
-        <h3
-          className="text-[10px] tracking-[0.2em] uppercase"
-          style={{ color: 'var(--accent)', fontWeight: 600 }}
+    <div
+      ref={cardRef}
+      className="fixed z-40 glass rounded-lg shadow-lg"
+      style={{
+        left: pos.x,
+        top: pos.y,
+        minWidth: 200,
+        maxWidth: 280,
+        userSelect: 'none',
+      }}
+    >
+      {/* draggable header */}
+      <div
+        className="flex items-center justify-between px-3 py-2 cursor-grab active:cursor-grabbing"
+        style={{ borderBottom: '1px solid var(--glass-border)' }}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+      >
+        <span
+          className="text-[10px] tracking-[0.15em] uppercase"
+          style={{ color: 'var(--text-secondary)', fontWeight: 600 }}
         >
-          Selected ({count}/{MAX_SELECTED})
-        </h3>
+          Selected ({count})
+        </span>
         <button
           onClick={handleClearAll}
-          className="flex items-center gap-1 text-[9px] px-2 py-0.5 rounded border border-white/10 hover:bg-[var(--glass-hover)] transition-colors"
+          className="text-[9px] px-1.5 py-0.5 rounded hover:bg-[var(--glass-hover)] transition-colors"
           style={{ color: 'var(--text-secondary)' }}
         >
-          <Trash2 size={9} />
-          Clear All
+          clear all
         </button>
       </div>
 
-      {/* list */}
-      <div>
+      {/* sat list */}
+      <div className="py-1 max-h-[300px] overflow-y-auto custom-scroll">
         {selectedSats.map((sat) => (
           <SelectedSatelliteRow
             key={sat.id}

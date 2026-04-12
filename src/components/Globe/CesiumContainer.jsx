@@ -97,6 +97,10 @@ export default function CesiumContainer() {
     let viewer;
 
     async function initViewer() {
+      // hidden credit container to suppress Cesium Ion logo
+      const creditDiv = document.createElement('div');
+      creditDiv.style.display = 'none';
+
       viewer = new Cesium.Viewer(containerRef.current, {
         baseLayer: false,
         animation: false,
@@ -110,11 +114,12 @@ export default function CesiumContainer() {
         selectionIndicator: false,
         fullscreenButton: false,
         shouldAnimate: true,
+        creditContainer: creditDiv,
       });
 
       // dark map tiles (CartoDB dark matter - roads, cities, labels)
       const darkTiles = new Cesium.UrlTemplateImageryProvider({
-        url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+        url: 'https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png',
         subdomains: ['a', 'b', 'c', 'd'],
         credit: new Cesium.Credit('CartoDB'),
         minimumLevel: 0,

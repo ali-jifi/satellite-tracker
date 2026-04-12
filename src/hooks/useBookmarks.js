@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import useAppStore from '../stores/appStore';
 import useSatelliteStore from '../stores/satelliteStore';
 
-// bookmark helper hook w/ next/prev cycling and stale-ID filtering
+// bookmark helper hook w/ next/prev cycling and stale id filtering
 export default function useBookmarks() {
   const bookmarks = useAppStore((s) => s.bookmarks);
   const toggleBookmark = useAppStore((s) => s.toggleBookmark);
@@ -36,7 +36,7 @@ export default function useBookmarks() {
     useSatelliteStore.getState().setDetailSatelliteId(valid[prev]);
   }, [getValidBookmarks]);
 
-  // remove stale bookmark IDs not in catalog
+  // remove stale bookmark ids not in catalog
   const cleanStaleBookmarks = useCallback(() => {
     const valid = getValidBookmarks();
     if (valid.length !== bookmarks.length) {

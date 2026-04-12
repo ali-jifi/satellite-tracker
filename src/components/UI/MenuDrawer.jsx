@@ -1,7 +1,6 @@
 import { MapPin } from 'lucide-react';
 import useAppStore from '../../stores/appStore';
 import SearchBar from './SearchBar';
-import SelectedPanel from './SelectedPanel';
 import BookmarkSection from './BookmarkSection';
 import CategoryTree from './CategoryTree';
 
@@ -22,9 +21,6 @@ export default function MenuDrawer() {
       <div className="pt-16 px-4 pb-6">
         {/* search bar -- always visible */}
         <SearchBar />
-
-        {/* selected sats panel -- visible when sats selected */}
-        <SelectedPanel />
 
         {/* bookmarked sats -- visible when bookmarks exist */}
         <BookmarkSection />
